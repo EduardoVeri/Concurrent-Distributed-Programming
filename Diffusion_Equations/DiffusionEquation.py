@@ -19,7 +19,7 @@ class DiffusionEquation:
         library_path: str,
         initial_concentration_points_and_values: dict = None,
         N: int = 100,
-        D: float = 1.0,
+        D: float = 0.1,
         DELTA_T: float = 0.01,
         DELTA_X: float = 1.0,
     ):
@@ -39,19 +39,17 @@ class DiffusionEquation:
 
         # Create initial concentration matrices
         self.C = np.zeros((self.N, self.N), dtype=np.float64)
-        
+
         if initial_concentration_points_and_values:
             for point, value in initial_concentration_points_and_values.items():
                 self.C[point[0], point[1]] = value
         else:
             self.C[self.N // 2, self.N // 2] = 1.0
-        
-        self.C = self._convert_numpy_to_double_ptr_ptr(self.C)
-        
-        self.C_new = self._convert_numpy_to_double_ptr_ptr(
-            np.zeros((self.N, self.N), dtype=np.float64)
-        )
-        print(self.C[self.N // 2][self.N // 2])
+
+        self.__C_ptr = self._convert_numpy_to_double_ptr_ptr(self.C)
+
+        self.C_new = np.zeros((self.N, self.N), dtype=np.float64)
+        self.__C_new_ptr = self._convert_numpy_to_double_ptr_ptr(self.C_new)
 
     def _load_library(self, path: str):
         if not os.path.exists(path):
@@ -86,26 +84,28 @@ class DiffusionEquation:
             row_ptrs[i] = array[i].ctypes.data_as(POINTER(c_double))
         return row_ptrs
 
-    def step(self):
-        # Call the C function
-        self.lib.sequential_diff_eq(self.C, self.C_new, ctypes.byref(self.args))
-        # Swap the pointers
-        self.C, self.C_new = self.C_new, self.C
-        print(self.C[self.N // 2][self.N // 2])
+    def sequential_step(self):
+        self.lib.sequential_diff_eq(
+            self.__C_ptr, self.__C_new_ptr, ctypes.byref(self.args)
+        )
+
+    @property
+    def concentration_matrix(self):
+        return self.C
 
 
 # Example Usage
 if __name__ == "__main__":
     # Path to the compiled shared library
     # Update this path based on your environment
-    library_path = "/home/eduardovf/documents/projects/pcd/Concurrent-Distributed-Programming/build/libmylibrary.so"
+    library_path = "../build/libmylibrary.so"
 
     # Initialize the DiffusionEquation class
     diffusion = DiffusionEquation(library_path)
 
     # Perform a diffusion step
     for i in range(1000):
-        diffusion.step()
+        diffusion.sequential_step()
 
-    # print(diffusion.C_new[diffusion.N // 2, diffusion.N // 2])
-    
+    # Get the concentration matrix
+    print(diffusion.concentration_matrix[diffusion.N // 2, diffusion.N // 2])
