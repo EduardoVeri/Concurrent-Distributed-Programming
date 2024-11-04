@@ -1,6 +1,19 @@
 # CMakeLists.txt
 cmake_minimum_required(VERSION 3.10)
-project(Concurrent-Distributed-Programming)
+project(Diffusion-Equation)
+
+# ----------------------------
+# Add Option to Disable Optimizations
+# ----------------------------
+option(NO_OPTIMIZATION "Disable compiler optimizations" OFF)
+
+if (NO_OPTIMIZATION)
+    message(STATUS "Compiler optimizations are disabled.")
+    # Remove existing optimization flags and set to -O0
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O0")
+    set(CMAKE_C_FLAGS_RELEASE "") # Optionally clear release flags
+    set(CMAKE_C_FLAGS_RELWITHDEBINFO "") # Clear RelWithDebInfo flags if necessary
+endif()
 
 # Set the C standard
 set(CMAKE_C_STANDARD 99)
@@ -16,6 +29,7 @@ find_package(OpenMP REQUIRED)
 
 if (NOT OpenMP_C_FOUND)
     message(FATAL_ERROR "OpenMP not found")
+endif()
 
 # ----------------------------
 # Static Library for Utils
@@ -36,16 +50,16 @@ set(LIB_SOURCES
 )
 
 # Create the shared library
-add_library(mylibrary SHARED ${LIB_SOURCES})
+add_library(DiffusionEquation SHARED ${LIB_SOURCES})
 
 # Define BUILD_SHARED to exclude main functions
-target_compile_definitions(mylibrary PRIVATE BUILD_SHARED)
+target_compile_definitions(DiffusionEquation PRIVATE BUILD_SHARED)
 
-# Link the shared library with the utils static library
-target_link_libraries(mylibrary PRIVATE utils OpenMP::OpenMP_C)
+# Link the shared library with the utils static library and OpenMP
+target_link_libraries(DiffusionEquation PRIVATE utils OpenMP::OpenMP_C)
 
 # Specify the library's include directories
-target_include_directories(mylibrary PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/inc)
+target_include_directories(DiffusionEquation PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/inc)
 
 # ----------------------------
 # Standalone Executables
@@ -54,7 +68,7 @@ target_include_directories(mylibrary PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/inc)
 # Function to create executables
 function(create_executable exec_name src_file)
     add_executable(${exec_name} ${src_file})
-    # Link each executable with the utils static library
+    # Link each executable with the utils static library and OpenMP
     target_link_libraries(${exec_name} PRIVATE utils OpenMP::OpenMP_C)
 endfunction()
 
