@@ -82,6 +82,8 @@ int main(int argc, char *argv[]) {
     printf("Concentração final no centro: %f\n", C[N / 2][N / 2]);
 
     // show_matrix(C);
+    free_matrix(C, N);
+    free_matrix(C_new, N);
 
     return 0;
 }
