@@ -9,5 +9,6 @@ typedef struct {
 } DiffEqArgs;
 
 void sequential_diff_eq(double **C, double **C_new, DiffEqArgs *args);
+void omp_diff_eq(double **C, double **C_new, DiffEqArgs *args);
 
 #endif

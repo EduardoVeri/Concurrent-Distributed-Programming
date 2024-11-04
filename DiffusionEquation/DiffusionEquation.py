@@ -14,6 +14,12 @@ class DiffEqArgs(Structure):
 
 
 class DiffusionEquation:
+    FUNCTION_PARAMS = [
+            POINTER(POINTER(c_double)),  # double** C
+            POINTER(POINTER(c_double)),  # double** C_new
+            POINTER(DiffEqArgs),  # DiffEqArgs* args
+        ]
+    
     def __init__(
         self,
         library_path: str,
@@ -58,12 +64,11 @@ class DiffusionEquation:
 
     def _define_c_functions(self):
         # Define the argument and return types for sequential_diff_eq
-        self.lib.sequential_diff_eq.argtypes = [
-            POINTER(POINTER(c_double)),  # double** C
-            POINTER(POINTER(c_double)),  # double** C_new
-            POINTER(DiffEqArgs),  # DiffEqArgs* args
-        ]
+        self.lib.sequential_diff_eq.argtypes = self.FUNCTION_PARAMS
         self.lib.sequential_diff_eq.restype = None  # void
+        
+        self.lib.omp_diff_eq.argtypes = self.FUNCTION_PARAMS
+        self.lib.omp_diff_eq.restype = None  # void
 
     def _convert_numpy_to_double_ptr_ptr(self, array: np.ndarray):
         if not (
@@ -86,6 +91,11 @@ class DiffusionEquation:
 
     def sequential_step(self):
         self.lib.sequential_diff_eq(
+            self.__C_ptr, self.__C_new_ptr, ctypes.byref(self.args)
+        )
+    
+    def omp_step(self):
+        self.lib.omp_diff_eq(
             self.__C_ptr, self.__C_new_ptr, ctypes.byref(self.args)
         )
 
