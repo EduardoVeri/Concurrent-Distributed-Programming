@@ -1,5 +1,3 @@
-// Write everything in with english, please.
-
 #include <stdio.h>
 #include <stdlib.h>
 #include "diff_eq.h"
