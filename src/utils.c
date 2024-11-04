@@ -1,3 +1,5 @@
+#include <stdlib.h>
+
 double ** create_matrix(int N){
     double **matrix = (double **)malloc(N * sizeof(double *));
     for (int i = 0; i < N; i++) {
