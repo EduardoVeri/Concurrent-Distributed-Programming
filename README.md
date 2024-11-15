@@ -9,7 +9,7 @@ sudo apt-get install cmake build-essential -y
 To build the project, you can use the following commands:
 ```bash
 mkdir build
-cmake -B build -S .
+cmake -B build -S . [-DNO_OPTIMIZATION=ON/OFF]
 cmake --build build
 ```
 
