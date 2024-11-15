@@ -73,5 +73,5 @@ function(create_executable exec_name src_file)
 endfunction()
 
 # Create executables for each source file
-create_executable(sequential_exec src/sequential.c)
-create_executable(omp_exec src/omp.c)
+create_executable(sequential src/sequential.c)
+create_executable(omp src/omp.c)

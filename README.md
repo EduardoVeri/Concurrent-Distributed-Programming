@@ -13,6 +13,27 @@ cmake -B build -S . [-DNO_OPTIMIZATION=ON/OFF]
 cmake --build build
 ```
 
+## Using the C executable
+The C executable provides a command-line interface for solving diffusion equations. The executable takes the following command-line arguments:
+
+- `N`: Grid size
+- `T`: Total iterations
+- `D`: Diffusion coefficient
+- `dt`: Time step
+- `dx`: Spatial step
+- `omp`: Number of OpenMP threads
+
+```bash
+./build/sequential <N> <T> <D> <dt> <dx>
+./build/omp <N> <T> <D> <dt> <dx> <omp>
+```
+
+Here is an example of how to run the C executable:
+```bash
+time ./build/sequential 100 1000 0.1 0.01 1.0
+time ./build/omp 100 1000 0.1 0.01 1.0 4
+```
+
 ## Using the Python Module
 The diffusion Python module provides an interface for solving diffusion equations using the shared C library compiled with the CMake. This allows for efficient numerical simulations by leveraging the computational speed of C while maintaining the flexibility and ease of use of Python.
 
