@@ -1,17 +1,26 @@
 
 ## Build the Project
-This project is built using CMake. To build the project, you need to have CMake installed on your system. If you don't have CMake installed, you can install it using the following command:
+This project is built using CMake. You can install it using the following command:
 
 ```bash
 sudo apt-get install cmake build-essential -y
 ```
 
-To build the project, you can use the following commands:
+To build the project, you can use the following commands on the project root directory:
 ```bash
 mkdir build
 cmake -B build -S . [-DNO_OPTIMIZATION=ON/OFF]
 cmake --build build
 ```
+
+This will create a `build` directory and generate three files in it:
+- sequential (executable)
+- omp (executable)
+- libDiffusionEquation.so (shared library)
+
+The `sequential` executable is the sequential version of the diffusion equation solver, while the `omp` executable is the parallel version using OpenMP. The shared library `libDiffusionEquation.so` can be used to interface with the diffusion solver in Python.
+
+The `NO_OPTIMIZATION` flag can be used to disable compiler optimizations. By default, the project is built with optimizations enabled. To disable optimizations, use `-DNO_OPTIMIZATION=ON`. **Note that the optimization process can vectorize the code so well that the parallelization does not provide any speedup**. In such cases, you can disable optimizations to see the effect of it.
 
 ## Using the C executable
 The C executable provides a command-line interface for solving diffusion equations. The executable takes the following command-line arguments:
@@ -41,7 +50,7 @@ This will be useful for users who are not familiar with C programming or who wan
 
 Before using the Python module, ensure that you have built the shared C library (libDiffusionEquation.so) as per the build instructions above.
 
-To install the Python module, run:
+To install the Python module, run the following command in the project root directory:
 ```bash
 pip install -e .
 ```
