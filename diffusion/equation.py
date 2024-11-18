@@ -34,9 +34,7 @@ class DiffusionEquation:
         self._define_c_functions()
 
         # Create a DiffEqArgs instance
-        self.args = DiffEqArgs(
-            N=N, D=D, DELTA_T=DELTA_T, DELTA_X=DELTA_X
-        )
+        self.args = DiffEqArgs(N=N, D=D, DELTA_T=DELTA_T, DELTA_X=DELTA_X)
 
         # Set default values for diffusion parameters
         self.set_diffusion_parameters(D, DELTA_T, DELTA_X)
