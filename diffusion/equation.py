@@ -15,47 +15,63 @@ class DiffEqArgs(Structure):
 
 class DiffusionEquation:
     FUNCTION_PARAMS = [
-            POINTER(POINTER(c_double)),  # double** C
-            POINTER(POINTER(c_double)),  # double** C_new
-            POINTER(DiffEqArgs),  # DiffEqArgs* args
-        ]
-    
+        POINTER(POINTER(c_double)),  # double** C
+        POINTER(POINTER(c_double)),  # double** C_new
+        POINTER(DiffEqArgs),  # DiffEqArgs* args
+    ]
+
     def __init__(
         self,
         library_path: str,
-        initial_concentration_points_and_values: dict = None,
+        initial_concentration_points: dict[tuple[int, int], float] = None,
         N: int = 100,
         D: float = 0.1,
         DELTA_T: float = 0.01,
         DELTA_X: float = 1.0,
     ):
+        # Load the shared library
         self.lib = self._load_library(library_path)
         self._define_c_functions()
 
-        # Set default values for diffusion parameters
-        self.N = N
-        self.D = D
-        self.DELTA_T = DELTA_T
-        self.DELTA_X = DELTA_X
-
         # Create a DiffEqArgs instance
-        self.args = DiffEqArgs(
-            N=self.N, D=self.D, DELTA_T=self.DELTA_T, DELTA_X=self.DELTA_X
-        )
+        self.args = DiffEqArgs(N=N, D=D, DELTA_T=DELTA_T, DELTA_X=DELTA_X)
+
+        # Set default values for diffusion parameters
+        self.set_diffusion_parameters(D, DELTA_T, DELTA_X)
 
         # Create initial concentration matrices
+        self.reset_concentration_matrix(N)
+        self.set_initial_concentration(initial_concentration_points)
+
+    def reset_concentration_matrix(self, N: int):
+        self.N = N
+        self.args.N = self.N
         self.C = np.zeros((self.N, self.N), dtype=np.float64)
-
-        if initial_concentration_points_and_values:
-            for point, value in initial_concentration_points_and_values.items():
-                self.C[point[0], point[1]] = value
-        else:
-            self.C[self.N // 2, self.N // 2] = 1.0
-
         self.__C_ptr = self._convert_numpy_to_double_ptr_ptr(self.C)
 
         self.C_new = np.zeros((self.N, self.N), dtype=np.float64)
         self.__C_new_ptr = self._convert_numpy_to_double_ptr_ptr(self.C_new)
+
+    def set_diffusion_parameters(self, D: float, DELTA_T: float, DELTA_X: float):
+        self.D = D
+        self.DELTA_T = DELTA_T
+        self.DELTA_X = DELTA_X
+        self.args.D = self.D
+        self.args.DELTA_T = self.DELTA_T
+        self.args.DELTA_X = self.DELTA_X
+
+    def set_initial_concentration(self, points_and_values: dict = None):
+        if not points_and_values:
+            self.C[self.N // 2, self.N // 2] = 1.0
+            return
+
+        for point, value in points_and_values.items():
+            if 0 <= point[0] < self.N and 0 <= point[1] < self.N:
+                self.C[point[0], point[1]] = value
+            else:
+                raise ValueError(
+                    f"Invalid point: {point}. Point must be within the concentration matrix bounds (N={self.N})"
+                )
 
     def _load_library(self, path: str):
         if not os.path.exists(path):
@@ -66,9 +82,14 @@ class DiffusionEquation:
         # Define the argument and return types for sequential_diff_eq
         self.lib.sequential_diff_eq.argtypes = self.FUNCTION_PARAMS
         self.lib.sequential_diff_eq.restype = None  # void
-        
+
+        # Define the argument and return types for omp_diff_eq
         self.lib.omp_diff_eq.argtypes = self.FUNCTION_PARAMS
         self.lib.omp_diff_eq.restype = None  # void
+
+        # Open MP set max number of threads
+        self.lib.omp_set_num_threads.argtypes = [c_int]
+        self.lib.omp_set_num_threads.restype = None  # void
 
     def _convert_numpy_to_double_ptr_ptr(self, array: np.ndarray):
         if not (
@@ -93,11 +114,12 @@ class DiffusionEquation:
         self.lib.sequential_diff_eq(
             self.__C_ptr, self.__C_new_ptr, ctypes.byref(self.args)
         )
-    
+
     def omp_step(self):
-        self.lib.omp_diff_eq(
-            self.__C_ptr, self.__C_new_ptr, ctypes.byref(self.args)
-        )
+        self.lib.omp_diff_eq(self.__C_ptr, self.__C_new_ptr, ctypes.byref(self.args))
+
+    def set_num_threads(self, num_threads: int):
+        self.lib.omp_set_num_threads(num_threads)
 
     @property
     def concentration_matrix(self):
