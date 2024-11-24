@@ -13,6 +13,13 @@ cmake -B build -S . [-DNO_OPTIMIZATION=ON/OFF]
 cmake --build build
 ```
 
+Otherwise, you can use the following shell script to build the project:
+```bash
+./build.sh
+```
+
+Obs: if you are using __Windows__, use the `gcc` commands inside the script to compile the project.
+
 This will create a `build` directory and generate three files in it:
 - sequential (executable)
 - omp (executable)
