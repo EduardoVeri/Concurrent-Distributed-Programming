@@ -8,9 +8,11 @@ sudo apt-get install cmake build-essential -y
 
 To build the project, you can use the following commands on the project root directory:
 ```bash
-mkdir build
+# Generate configuration files. Run this command only once or when you want to change the optimization flag
 cmake -B build -S . [-DNO_OPTIMIZATION=ON/OFF]
-cmake --build build
+
+# Run this command every time you want to compile the project
+cmake --build build 
 ```
 
 Otherwise, you can use the following shell script to build the project:
