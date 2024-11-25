@@ -18,7 +18,7 @@
 
 \usepackage{graphicx,url}
 
-%\usepackage[brazil]{babel}   
+\usepackage[brazil]{babel}   
 \usepackage[utf8]{inputenc}  
 
      
@@ -46,14 +46,6 @@
 \begin{document} 
 
 \maketitle
-
-\begin{abstract}
-  This meta-paper describes the style to be used in articles and short papers
-  for SBC conferences. For papers in English, you should add just an abstract
-  while for the papers in Portuguese, we also ask for an abstract in
-  Portuguese (``resumo''). In both cases, abstracts should not have more than
-  10 lines and must be in the first page of the paper.
-\end{abstract}
      
 \begin{resumo} 
   Este meta-artigo descreve o estilo a ser usado na confecção de artigos e
@@ -65,6 +57,122 @@
   página do artigo.
 \end{resumo}
 
+\section{Introdução}
+
+\section{Desenvolvimento}
+
+\section{Resultados}
+
+Nesta seção, apresentamos os resultados obtidos de nossa implementação. Inicialmente, analisamos a equivalência lógica entre os códigos sequencial e paralelo, considerando possíveis erros que podem surgir na paralelização, como condições de corrida ou inconsistências de sincronização. Em seguida, ilustramos, por meio de mapas de calor, a atualização dos valores da matriz ao longo do tempo. Por fim, realizamos uma análise comparativa dos tempos médios de execução, \textit{speedup} e eficiência entre as duas versões.
+
+\subsection{Validação da Implementação}
+
+Para assegurar a correção das duas implementações, verificamos em cada iteração se os valores presentes em cada célula da matriz são idênticos. Dessa forma, o resultado final na última iteração deve ser o mesmo em ambas as versões.
+
+Por meio desse procedimento, utilizando a interface Python em conjunto com um Jupyter Notebook, comprovamos que as duas soluções produzem resultados idênticos. Isso era esperado, pois no código paralelo não ocorrem condições de corrida, uma vez que a escrita não é realizada na mesma região de memória das leituras, tornando o processamento de cada célula pelas \textit{threads} independente.
+
+\subsection{Validação da Implementação}
+
+Para ilustrar o funcionamento da implementação, foram gerados mapas de calor, representado pela Figura \ref{fig:heatmap}, nos quais cada ponto de uma matriz 50x50 é representado por uma cor distinta. Cores escuras correspondem a valores próximos de um, indicando alta concentração do contaminante, enquanto cores claras representam valores próximos de zero, indicando baixa presença de contaminação.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=.7\textwidth]{figs/heatmap.png}
+\caption{Mapa de calor em quatro instantes distintos da simulação.}
+\label{fig:heatmap}
+\end{figure}
+
+Analisando a progressão dos mapas de calor, observamos que o comportamento faz sentido no contexto da solução proposta. Inicialmente, o contaminante é adicionado com alta concentração nas diagonais e no centro da matriz, evidenciado pelas regiões brancas. Com o avanço das iterações, o contaminante começa a se difundir para as regiões adjacentes, aumentando gradativamente a luminosidade nessas áreas e diminuindo nos pontos de concentração inicial. Na última iteração, a concentração se distribui uniformemente pela matriz, com valores próximos entre si.
+
+\subsection{Análise de Desempenho}
+
+A análise de desempenho foi realizada em um computador \textit{desktop} com as seguintes especificações. Além disso, as especificações dos parâmetros do problema foram incluídas na tabela correspondente.
+
+\begin{table}[ht]
+\centering
+\caption{Tabela de especificação de Hardware}
+\vspace{0.3cm}
+\begin{tabular}{||c c||} 
+ \hline
+Especificações & Detalhes \\ [0.5ex] 
+ \hline\hline
+ Processador & Intel i7-4790 @ 3.60GHz \\ 
+ \hline
+ Núcleos / Lógicos & 4 / 8  \\
+ \hline
+ Memória RAM & 8 GB  \\
+ \hline
+ Sistema Operacional & Ubuntu 22.04.05 (via WSL)   \\ 
+ \hline
+\end{tabular}
+\end{table}
+
+\begin{table}[ht]
+\centering
+\caption{Tabela de especificação da Simulação}
+\vspace{0.3cm}
+\begin{tabular}{||c c||} 
+ \hline
+Especificações & Detalhes \\ [0.5ex] 
+ \hline\hline
+ Dimensão da Matriz (N x N) & 2000 x 2000 \\ 
+ \hline
+ Número de Iterações & 500  \\
+ \hline
+ Distribuição Inicial & Alta concentração no centro  \\
+ \hline
+ Coeficiente de Difusão & 0.1   \\ 
+ \hline
+ dt & 0.01   \\ 
+ \hline
+ dx & 1.0   \\ 
+ \hline
+\end{tabular}
+\end{table}
+
+Para obter valores mais consistentes e minimizar influências externas, como outros programas em execução, cada teste foi executado quinze vezes e, assim, calculamos o tempo médio gasto e seu desvio padrão. O \textit{speedup} é calculado dividindo-se o tempo de execução sequencial pelo tempo de execução paralelo correspondente, enquanto a eficiência é determinada ao dividir o \textit{speedup} pelo número de \textit{threads} utilizados.
+
+\begin{table}[ht]
+\centering
+\caption{Tabela de comparação de desempenho entre o código sequencial e o paralelo utilizando OpenMP.}
+\vspace{0.3cm}
+\begin{tabular}{||c c c c||} 
+ \hline
+ Nº Threads & Tempo & Speedup & Eficiência \\ [0.5ex] 
+ \hline\hline
+ 1 & 23.00 $\pm$ 0.95 & 1.0 & 100\% \\ 
+ \hline
+ 2 & 13.09 $\pm$ 1.19 &  1.76 & 87,86\% \\
+ \hline
+ 4 & 9.98 $\pm$ 1.14 & 2.31 & 57.62\% \\
+ \hline
+ 8 & 8.85 $\pm$ 1.21 & 2.60 & 32.50\% \\
+ \hline
+ 16 & 8.66 $\pm$ 1.13 & 2.65 & 16.59\% \\
+ \hline
+ 32 & 8.95 $\pm$ 1.21 & 2.56 & 8.02\% \\ 
+ \hline
+\end{tabular}
+\end{table}
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=.5\textwidth]{figs/speedupxthreads.png}
+\caption{Gráfico do \textit{speedup} por número de \textit{threads}}
+\label{fig:speedupOMP}
+\end{figure}
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=.5\textwidth]{figs/eficienciaxthreads.png}
+\caption{Gráfico da eficiência por número de \textit{threads}}
+\label{fig:eficienciaOMP}
+\end{figure}
+
+
+O gráfico de \textit{speedup} (Figura \ref{fig:speedupOMP}) mostra uma tendência de estabilização em torno do valor três, enquanto o \textit{speedup} linear ideal apresenta valores significativamente maiores, o que pode sugerir que a escalabilidade da aplicação é limitada, possivelmente devido a \textit{overheads} de sincronização ou ao fato de que o problema não é suficientemente grande para aproveitar eficientemente um número maior de \textit{threads}. Além disso, o desempenho pode estar sendo afetado pela latência de memória ou pela arquitetura do processador utilizado e, consequentemente, não há grandes vantagens em utilizar um número elevado de \textit{threads} para resolver este problema específico, já que aumentaria excessivamente o consumo de energia pela máquina, que pode ser observado pela grande queda no gráfico de eficiência da Figura \ref{fig:eficienciaOMP}.
+
+\section{Conclusão}
 
 \section{General Information}
 
@@ -153,6 +261,7 @@ space before and after each caption.
 \includegraphics[width=.7\textwidth]{table.jpg}
 \end{table}
 
+
 \section{Images}
 
 All images and illustrations should be in black-and-white, or gray tones,
@@ -176,4 +285,3 @@ indented, while the subsequent should be indented by 0.5 cm.
 \bibliography{sbc-template}
 
 \end{document}
-
