@@ -82,7 +82,7 @@ Para ilustrar o funcionamento da implementação, foram gerados mapas de calor, 
 \label{fig:heatmap}
 \end{figure}
 
-Analisando a progressão dos mapas de calor, observamos que o comportamento faz sentido no contexto da solução proposta. Inicialmente, o contaminante é adicionado com alta concentração nas diagonais e no centro da matriz, evidenciado pelas regiões brancas. Com o avanço das iterações, o contaminante começa a se difundir para as regiões adjacentes, aumentando gradativamente a luminosidade nessas áreas e diminuindo nos pontos de concentração inicial. Na última iteração, a concentração se distribui uniformemente pela matriz, com valores próximos entre si.
+Analisando a progressão dos mapas de calor, observamos que o comportamento faz sentido no contexto da solução proposta. Inicialmente, o contaminante é adicionado com alta concentração nas diagonais e no centro da matriz, evidenciado pelas regiões azuis escuras. Com o avanço das iterações, o contaminante começa a se difundir para as regiões adjacentes, aumentando gradativamente a luminosidade nessas áreas e diminuindo nos pontos de concentração inicial. Na última iteração, a concentração se distribui uniformemente pela matriz, com valores próximos entre si.
 
 \subsection{Análise de Desempenho}
 
@@ -140,17 +140,17 @@ Para obter valores mais consistentes e minimizar influências externas, como out
  \hline
  Nº Threads & Tempo & Speedup & Eficiência \\ [0.5ex] 
  \hline\hline
- 1 & 23.00 $\pm$ 0.95 & 1.0 & 100\% \\ 
+ 1 & 26.22 $\pm$ 2.09 & 1.0 & 100\% \\ 
  \hline
- 2 & 13.09 $\pm$ 1.19 &  1.76 & 87,86\% \\
+ 2 & 14.59 $\pm$ 1.49 & 1.80 & 89,88\% \\
  \hline
- 4 & 9.98 $\pm$ 1.14 & 2.31 & 57.62\% \\
+ 4 & 10.60 $\pm$ 1.43 & 2.47 & 61.82\% \\
  \hline
- 8 & 8.85 $\pm$ 1.21 & 2.60 & 32.50\% \\
+ 8 & 8.52 $\pm$ 1.32 & 3.08 & 38.48\% \\
  \hline
- 16 & 8.66 $\pm$ 1.13 & 2.65 & 16.59\% \\
+ 16 & 8.29 $\pm$ 1.29 & 3.16 & 19.77\% \\
  \hline
- 32 & 8.95 $\pm$ 1.21 & 2.56 & 8.02\% \\ 
+ 32 & 8.67 $\pm$ 1.43 & 3.03 & 9.45\% \\ 
  \hline
 \end{tabular}
 \end{table}
