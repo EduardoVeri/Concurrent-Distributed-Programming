@@ -20,7 +20,7 @@ double sequential_diff_eq(double **C, double **C_new, DiffEqArgs *args){
             C[i][j] = C_new[i][j];
         }
     }
-    return difmedio;
+    return difmedio / ((N-2)*(N-2));
 }
 
 #ifndef BUILD_SHARED
@@ -52,7 +52,7 @@ int main(int argc, char *argv[]) {
     for (int t = 0; t < T; t++) {
         double difmedio = sequential_diff_eq(C, C_new, &args);
         if ((t%100) == 0)
-          printf("interacao %d - diferenca = %g\n", t, difmedio/((N-2)*(N-2)));
+          printf("interacao %d - diferenca = %g\n", t, difmedio);
     }
 
     // Show concentration at the center
