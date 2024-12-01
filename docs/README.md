@@ -2,6 +2,8 @@
 
 This repository contains the LaTeX source files for the report titled "Análise de Desempenho Paralelo de Modelos de Difusão de Contaminantes em Água." The report analyzes the performance of sequential and parallel implementations of contaminant diffusion models using OpenMP. It discusses implementation details, compares performance metrics, and validates the models outputs.
 
+👉 **[View the compiled PDF report here](./main.pdf)**.
+
 ## Prerequisites
 
 Ensure you have the following software installed on your system:
