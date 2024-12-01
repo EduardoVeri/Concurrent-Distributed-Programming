@@ -19,72 +19,62 @@
 \usepackage{graphicx,url}
 
 \usepackage[brazil]{babel}   
-\usepackage{indentfirst}
 \usepackage[utf8]{inputenc}  
 
      
 \sloppy
 
-\title{Instructions for Authors of SBC Conferences\\ Papers and Abstracts}
+\title{Análise de Desempenho Paralelo de Modelos de Difusão de Contaminantes em Água}
 
-\author{Luciana P. Nedel\inst{1}, Rafael H. Bordini\inst{2}, Flávio Rech
-  Wagner\inst{1}, Jomi F. Hübner\inst{3} }
+\author{Eduardo Verissimo Faccio, Pedro Figueiredo Dias, \\
+Pedro Henrique de Oliveira Masteguin}
 
 
-\address{Instituto de Informática -- Universidade Federal do Rio Grande do Sul
-  (UFRGS)\\
-  Caixa Postal 15.064 -- 91.501-970 -- Porto Alegre -- RS -- Brazil
-\nextinstitute
-  Department of Computer Science -- University of Durham\\
-  Durham, U.K.
-\nextinstitute
-  Departamento de Sistemas e Computação\\
-  Universidade Regional de Blumenal (FURB) -- Blumenau, SC -- Brazil
-  \email{\{nedel,flavio\}@inf.ufrgs.br, R.Bordini@durham.ac.uk,
-  jomi@inf.furb.br}
+\address{Instituto de Ciência e Tecnologia -- Universidade Federal de São Paulo (UNIFESP)\\
+    São José dos Campos -- SP -- Brasil
+  \email{\{verissimo.eduardo,pedro.figueiredo,p.masteguin\}@unifesp.br}
 }
 
 \begin{document} 
 
 \maketitle
      
-\begin{resumo} 
-  Este meta-artigo descreve o estilo a ser usado na confecção de artigos e
-  resumos de artigos para publicação nos anais das conferências organizadas
-  pela SBC. É solicitada a escrita de resumo e abstract apenas para os artigos
-  escritos em português. Artigos em inglês deverão apresentar apenas abstract.
-  Nos dois casos, o autor deve tomar cuidado para que o resumo (e o abstract)
-  não ultrapassem 10 linhas cada, sendo que ambos devem estar na primeira
-  página do artigo.
-\end{resumo}
+% \begin{resumo} 
+%   Este meta-artigo descreve o estilo a ser usado na confecção de artigos e
+%   resumos de artigos para publicação nos anais das conferências organizadas
+%   pela SBC. É solicitada a escrita de resumo e abstract apenas para os artigos
+%   escritos em português. Artigos em inglês deverão apresentar apenas abstract.
+%   Nos dois casos, o autor deve tomar cuidado para que o resumo (e o abstract)
+%   não ultrapassem 10 linhas cada, sendo que ambos devem estar na primeira
+%   página do artigo.
+% \end{resumo}
 
 \section{Introdução}
 
-\section{Desenvolvimento}
 
-\subsection{Implementação do Algorítimo}
+\section{Implementação do Algorítimo}
 
-\subsubsection{Código Sequencial}
+\subsection{Código Sequencial}
 
-O código sequencial implementa a solução númerica da equação de difusão usando uma abordagem serial. Utilizando-se do método de diferenças finitas, é simulado a dispersão de uma substância em uma matriz bidimensional. Cada célula da matriz representa a concentração de uma substância em um ponto do espaço.
+O código sequencial implementa a solução numérica da equação de difusão usando uma abordagem serial. Utilizando-se do método de diferenças finitas, é simulado a dispersão de uma substância em uma matriz bidimensional. Cada célula da matriz representa a concentração de uma substância em um ponto do espaço.
 
-O cálculo é realizado em um laço de repetição que itera sobre todas as células da matriz. A atualização de cada célula depende da média das concentrações dos seus vizinhos imediatos e de parâmetros físicos como coeficiente de difusão, o intervalo de tempo DELTA\_T e o espaçamento espacial DELTA\_X.
+O cálculo é realizado em um laço de repetição que itera sobre todas as células da matriz. A atualização de cada célula depende da média das concentrações dos seus vizinhos imediatos e de parâmetros físicos como coeficiente de difusão, o intervalo de tempo \textit{dt} e o espaçamento espacial \textit{dx}.
 
-\subsubsection{Código Paralelo}
+\subsection{Código Paralelo}
 
-O código paralelo implementa uma versão desenvolvida em OpenMP do mesmo algorítimo sequencial, para distribuir o trabalho entre mútiplos núcleos do processador. Isso é alcançado utilizando-se das diretivas específicas da biblioteca na estrutura do código sequencial.
+O código paralelo implementa uma versão desenvolvida em OpenMP do mesmo algorítimo sequencial, para distribuir o trabalho entre múltiplos núcleos do processador. Isso é alcançado utilizando-se das diretivas específicas da biblioteca na estrutura do código sequencial.
 
 \begin{itemize}
-    \item \#pragma omp parallel for collapse(2): É a diretiva que divide automaticamente os loops de cálculo entre mútiplos threads. Cada thread é responsável por atualizar uma parte distinta da matriz, permitindo que várias partes do cálculo sejam realizadas simultaneamente. O uso de collapse(2) indica que o compilador deve tratar múltíplos laços aninhados com um único para fins de paralelismo. No caso do código de difusão os dois laçõs de repetição aninhados serão linearizados.
-    \item omp\_set\_num\_threads(int num\_threads): Permite configurar dinamicamente o número de threads a serem utilizados pelo código.
+    \item \#pragma omp parallel for collapse(2): É a diretiva que divide automaticamente os loops de cálculo entre múltiplos threads. Cada thread é responsável por atualizar uma parte distinta da matriz, permitindo que várias partes do cálculo sejam realizadas simultaneamente. O uso de collapse(2) indica que o compilador deve tratar múltiplas laços aninhados com um único para fins de paralelismo. No caso do código de difusão, os dois laços de repetição aninhados serão linearizados.
     \item \#pragma omp parallel for reduction(+:difmedio) collapse(2): Essa diretiva assim como a anterior executa as iterações do laço de repetição de maneira paralela, com o adicional de reduções, que garantem que a operação de somatório que monitora a convergência do algorítimo seja realizada de maneira segura entre as diferentes threads que acessam as variáveis dessa operação.
+    \item omp\_set\_num\_threads(int num\_threads): Permite configurar dinamicamente o número de threads a serem utilizados pelo código, sendo extremamente útil para realizar as verificações de desempenho.
 \end{itemize}
 
-\subsubsection{Interface Python e ferramenta CMake}
+\subsection{Interface Python e ferramenta CMake}
 
-O sistema de compilação do projeto é gerenciado pelo CMake, uma ferramenta de automação de compilação. Por meio de um arquivo de configuração o processo de construção do projeto é realizado de forma modular e eficiente. Nesse arquivo são definidas as dependências dos programas como a biblioteca OpenMP. Além disso, uma particularidade do uso do CMake e do projeto é o uso de flags de compilação que desativam as otimizações do compilador, dado que nas primeiras versões do código, as diferenças de desempenho entre as implementações sequencial e paralela não eram significativas. Supôs-se que isso ocorria devido a vetorização automática realizada pelo compilador de C no código sequencial, otimizando as operações a ponto de reduzir a vantagem do paralelismo. Ao desativar essas otimizações, forçou-se o compilador a seguir uma execução mais direta e sem otimizações agressivas, permitindo que a diferença de desempenho entre as abordagens fosse evidenciada.
+O projeto utiliza o CMake como sistema de compilação, definindo processos e dependências (como a biblioteca OpenMP) por meio de um arquivo de configuração. Para evidenciar as diferenças de desempenho entre as implementações sequencial e paralela, desativamos otimizações do compilador usando flags específicas, pois otimizações como a vetorização automática no código sequencial reduziram inicialmente essa diferença. Assim, desabilitar essas otimizações permitiu uma execução mais direta, destacando as diferenças de desempenho entre as abordagens.
 
-Ademais foi implementada uma interface Python para integrar os códigos em C com funcionalidades de alto nível. Essa interface utiliza o módulo ctypes para carregar a biblioteca de difusão escrita em C e mapear suas funções. Essa interface descreve funções que executam os códigos sequencial e paralelo em C, proporcionando a flexibilidade para execução das simulações, facilitando a integração com os métodos de analise desenvolvidos em notebooks Jupyter, nos quais há a implementação do código de visualização dos resultados.
+Além disso, implementamos uma interface Python usando o módulo ctypes para carregar a biblioteca de difusão em C e mapear suas funções e, com isso, permite executar os códigos sequencial e paralelo de forma flexível, facilitando a integração com métodos de análise desenvolvidos em notebooks Jupyter, onde os resultados são visualizados. Criar essa interface segue a abordagem de outras grandes bibliotecas da linguagem, combinando a facilidade de uso de um ambiente de alto nível com a eficiência de soluções implementadas em linguagens como C. Um exemplo de biblioteca que utiliza esse método é o NumPy, que oferece operações matemáticas de alto desempenho por meio de códigos otimizados em C.
 
 \section{Resultados}
 
@@ -92,7 +82,7 @@ Nesta seção, apresentamos os resultados obtidos de nossa implementação. Inic
 
 \subsection{Validação da Implementação}
 
-Para assegurar a correção das duas implementações, verificamos em cada iteração se os valores presentes em cada célula da matriz são idênticos. Dessa forma, o resultado final na última iteração deve ser o mesmo em ambas as versões.
+Para assegurar a correção das duas implementações, verificamos em cada iteração se os valores presentes em cada célula da matriz são idênticos. Dessa forma, o resultado na última iteração deve ser o mesmo em ambas as versões.
 
 Por meio desse procedimento, utilizando a interface Python em conjunto com um Jupyter Notebook, comprovamos que as duas soluções produzem resultados idênticos. Isso era esperado, pois no código paralelo não ocorrem condições de corrida, uma vez que a escrita não é realizada na mesma região de memória das leituras, tornando o processamento de cada célula pelas \textit{threads} independente.
 
@@ -107,7 +97,7 @@ Para ilustrar o funcionamento da implementação, foram gerados mapas de calor, 
 \label{fig:heatmap}
 \end{figure}
 
-Analisando a progressão dos mapas de calor, observamos que o comportamento faz sentido no contexto da solução proposta. Inicialmente, o contaminante é adicionado com alta concentração nas diagonais e no centro da matriz, evidenciado pelas regiões azuis escuras. Com o avanço das iterações, o contaminante começa a se difundir para as regiões adjacentes, aumentando gradativamente a luminosidade nessas áreas e diminuindo nos pontos de concentração inicial. Na última iteração, a concentração se distribui uniformemente pela matriz, com valores próximos entre si.
+Analisando a progressão dos mapas de calor, observamos que o comportamento faz sentido no contexto da solução proposta. Inicialmente, o contaminante é adicionado com alta concentração nas diagonais e no centro da matriz, evidenciado pelas regiões azuis escuros. Com o avanço das iterações, o contaminante começa a se difundir para as regiões adjacentes, aumentando gradativamente a luminosidade nessas áreas e diminuindo nos pontos de concentração inicial. Na última iteração, a concentração se distribui uniformemente pela matriz, com valores próximos entre si.
 
 \subsection{Análise de Desempenho}
 
@@ -195,116 +185,14 @@ Para obter valores mais consistentes e minimizar influências externas, como out
 \end{figure}
 
 
-O gráfico de \textit{speedup} (Figura \ref{fig:speedupOMP}) mostra uma tendência de estabilização em torno do valor três, enquanto o \textit{speedup} linear ideal apresenta valores significativamente maiores, o que pode sugerir que a escalabilidade da aplicação é limitada, possivelmente devido a \textit{overheads} de sincronização ou ao fato de que o problema não é suficientemente grande para aproveitar eficientemente um número maior de \textit{threads}. Além disso, o desempenho pode estar sendo afetado pela latência de memória ou pela arquitetura do processador utilizado e, consequentemente, não há grandes vantagens em utilizar um número elevado de \textit{threads} para resolver este problema específico, já que aumentaria excessivamente o consumo de energia pela máquina, que pode ser observado pela grande queda no gráfico de eficiência da Figura \ref{fig:eficienciaOMP}.
+O gráfico de \textit{speedup} (Figura \ref{fig:speedupOMP}) mostra uma tendência de estabilização em torno do valor três, enquanto o \textit{speedup} linear ideal apresenta valores significativamente maiores, o que pode sugerir que a escalabilidade da aplicação é limitada, possivelmente devido a \textit{overheads} de sincronização ou ao fato de que o problema não é suficientemente grande para aproveitar eficientemente um número maior de \textit{threads}. Além disso, o desempenho pode estar sendo afetado pela latência de memória ou pela arquitetura do processador utilizado e, consequentemente, não há grandes vantagens em utilizar um número elevado de \textit{threads} para resolver este problema específico.
 
 \section{Conclusão}
-
-\section{General Information}
-
-All full papers and posters (short papers) submitted to some SBC conference,
-including any supporting documents, should be written in English or in
-Portuguese. The format paper should be A4 with single column, 3.5 cm for upper
-margin, 2.5 cm for bottom margin and 3.0 cm for lateral margins, without
-headers or footers. The main font must be Times, 12 point nominal size, with 6
-points of space before each paragraph. Page numbers must be suppressed.
-
-Full papers must respect the page limits defined by the conference.
-Conferences that publish just abstracts ask for \textbf{one}-page texts.
-
-\section{First Page} \label{sec:firstpage}
-
-The first page must display the paper title, the name and address of the
-authors, the abstract in English and ``resumo'' in Portuguese (``resumos'' are
-required only for papers written in Portuguese). The title must be centered
-over the whole page, in 16 point boldface font and with 12 points of space
-before itself. Author names must be centered in 12 point font, bold, all of
-them disposed in the same line, separated by commas and with 12 points of
-space after the title. Addresses must be centered in 12 point font, also with
-12 points of space after the authors' names. E-mail addresses should be
-written using font Courier New, 10 point nominal size, with 6 points of space
-before and 6 points of space after.
-
-The abstract and ``resumo'' (if is the case) must be in 12 point Times font,
-indented 0.8cm on both sides. The word \textbf{Abstract} and \textbf{Resumo},
-should be written in boldface and must precede the text.
-
-\section{CD-ROMs and Printed Proceedings}
-
-In some conferences, the papers are published on CD-ROM while only the
-abstract is published in the printed Proceedings. In this case, authors are
-invited to prepare two final versions of the paper. One, complete, to be
-published on the CD and the other, containing only the first page, with
-abstract and ``resumo'' (for papers in Portuguese).
-
-\section{Sections and Paragraphs}
-
-Section titles must be in boldface, 13pt, flush left. There should be an extra
-12 pt of space before each title. Section numbering is optional. The first
-paragraph of each section should not be indented, while the first lines of
-subsequent paragraphs should be indented by 1.27 cm.
-
-\subsection{Subsections}
-
-The subsection titles must be in boldface, 12pt, flush left.
-
-\section{Figures and Captions}\label{sec:figs}
-
-
-Figure and table captions should be centered if less than one line
-(Figure~\ref{fig:exampleFig1}), otherwise justified and indented by 0.8cm on
-both margins, as shown in Figure~\ref{fig:exampleFig2}. The caption font must
-be Helvetica, 10 point, boldface, with 6 points of space before and after each
-caption.
-
-\begin{figure}[ht]
-\centering
-\includegraphics[width=.5\textwidth]{fig1.jpg}
-\caption{A typical figure}
-\label{fig:exampleFig1}
-\end{figure}
-
-\begin{figure}[ht]
-\centering
-\includegraphics[width=.3\textwidth]{fig2.jpg}
-\caption{This figure is an example of a figure caption taking more than one
-  line and justified considering margins mentioned in Section~\ref{sec:figs}.}
-\label{fig:exampleFig2}
-\end{figure}
-
-In tables, try to avoid the use of colored or shaded backgrounds, and avoid
-thick, doubled, or unnecessary framing lines. When reporting empirical data,
-do not use more decimal digits than warranted by their precision and
-reproducibility. Table caption must be placed before the table (see Table 1)
-and the font used must also be Helvetica, 10 point, boldface, with 6 points of
-space before and after each caption.
-
-\begin{table}[ht]
-\centering
-\caption{Variables to be considered on the evaluation of interaction
-  techniques}
-\label{tab:exTable1}
-\includegraphics[width=.7\textwidth]{table.jpg}
-\end{table}
-
-
-\section{Images}
-
-All images and illustrations should be in black-and-white, or gray tones,
-excepting for the papers that will be electronically available (on CD-ROMs,
-internet, etc.). The image resolution on paper should be about 600 dpi for
-black-and-white images, and 150-300 dpi for grayscale images.  Do not include
-images with excessive resolution, as they may take hours to print, without any
-visible difference in the result. 
+Por meio de implementações sequenciais e paralelas utilizando OpenMP, foi validada a correção dos resultados e analisou-se o impacto do paralelismo no tempo de execução. Os resultados obtidos mostraram que, embora o paralelismo traga ganhos significativos em relação ao código sequencial, há limitações na escalabilidade, possivelmente devido a fatores como \textit{overheads} de sincronização e restrições arquiteturais do hardware utilizado. Assim, este trabalho reforça os conceitos fundamentais aprendidos em programação concorrente e distribuída, evidenciando as vantagens práticas da paralelização em termos de desempenho e eficiência em simulações numéricas.
 
 \section{References}
 
-Bibliographic references must be unambiguous and uniform.  We recommend giving
-the author names references in brackets, e.g. \cite{knuth:84},
-\cite{boulic:91}, and \cite{smith:99}.
 
-The references must be listed using 12 point font size, with 6 points of space
-before each reference. The first line of each reference should not be
-indented, while the subsequent should be indented by 0.5 cm.
 
 \bibliographystyle{sbc}
 \bibliography{sbc-template}
