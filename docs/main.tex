@@ -19,6 +19,7 @@
 \usepackage{graphicx,url}
 
 \usepackage[brazil]{babel}   
+\usepackage{indentfirst}
 \usepackage[utf8]{inputenc}  
 
      
@@ -60,6 +61,30 @@
 \section{Introdução}
 
 \section{Desenvolvimento}
+
+\subsection{Implementação do Algorítimo}
+
+\subsubsection{Código Sequencial}
+
+O código sequencial implementa a solução númerica da equação de difusão usando uma abordagem serial. Utilizando-se do método de diferenças finitas, é simulado a dispersão de uma substância em uma matriz bidimensional. Cada célula da matriz representa a concentração de uma substância em um ponto do espaço.
+
+O cálculo é realizado em um laço de repetição que itera sobre todas as células da matriz. A atualização de cada célula depende da média das concentrações dos seus vizinhos imediatos e de parâmetros físicos como coeficiente de difusão, o intervalo de tempo DELTA\_T e o espaçamento espacial DELTA\_X.
+
+\subsubsection{Código Paralelo}
+
+O código paralelo implementa uma versão desenvolvida em OpenMP do mesmo algorítimo sequencial, para distribuir o trabalho entre mútiplos núcleos do processador. Isso é alcançado utilizando-se das diretivas específicas da biblioteca na estrutura do código sequencial.
+
+\begin{itemize}
+    \item \#pragma omp parallel for collapse(2): É a diretiva que divide automaticamente os loops de cálculo entre mútiplos threads. Cada thread é responsável por atualizar uma parte distinta da matriz, permitindo que várias partes do cálculo sejam realizadas simultaneamente. O uso de collapse(2) indica que o compilador deve tratar múltíplos laços aninhados com um único para fins de paralelismo. No caso do código de difusão os dois laçõs de repetição aninhados serão linearizados.
+    \item omp\_set\_num\_threads(int num\_threads): Permite configurar dinamicamente o número de threads a serem utilizados pelo código.
+    \item \#pragma omp parallel for reduction(+:difmedio) collapse(2): Essa diretiva assim como a anterior executa as iterações do laço de repetição de maneira paralela, com o adicional de reduções, que garantem que a operação de somatório que monitora a convergência do algorítimo seja realizada de maneira segura entre as diferentes threads que acessam as variáveis dessa operação.
+\end{itemize}
+
+\subsubsection{Interface Python e ferramenta CMake}
+
+O sistema de compilação do projeto é gerenciado pelo CMake, uma ferramenta de automação de compilação. Por meio de um arquivo de configuração o processo de construção do projeto é realizado de forma modular e eficiente. Nesse arquivo são definidas as dependências dos programas como a biblioteca OpenMP. Além disso, uma particularidade do uso do CMake e do projeto é o uso de flags de compilação que desativam as otimizações do compilador, dado que nas primeiras versões do código, as diferenças de desempenho entre as implementações sequencial e paralela não eram significativas. Supôs-se que isso ocorria devido a vetorização automática realizada pelo compilador de C no código sequencial, otimizando as operações a ponto de reduzir a vantagem do paralelismo. Ao desativar essas otimizações, forçou-se o compilador a seguir uma execução mais direta e sem otimizações agressivas, permitindo que a diferença de desempenho entre as abordagens fosse evidenciada.
+
+Ademais foi implementada uma interface Python para integrar os códigos em C com funcionalidades de alto nível. Essa interface utiliza o módulo ctypes para carregar a biblioteca de difusão escrita em C e mapear suas funções. Essa interface descreve funções que executam os códigos sequencial e paralelo em C, proporcionando a flexibilidade para execução das simulações, facilitando a integração com os métodos de analise desenvolvidos em notebooks Jupyter, nos quais há a implementação do código de visualização dos resultados.
 
 \section{Resultados}
 
