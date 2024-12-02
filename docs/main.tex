@@ -51,6 +51,12 @@
 
 \section{Introdução}
 
+Este trabalho aborda a implementação e desempenho de um modelo de difusão numérica, utilizando diferenças finitas para simular a dispersão de contaminantes em uma matriz bidimensional. O objetivo principal é comparar as versões sequencial e paralela do algoritmo, avaliando o impacto do paralelismo na eficiência computacional.
+
+As implementações paralelas, desenvolvidas com OpenMP, exploram o processamento simultâneo de múltiplos núcleos, acelerando cálculos em simulações de grandes volumes de dados. Os resultados serão validados por meio de mapas de calor, gráficos de speedup, eficiência e comparação das matrizes geradas.
+
+O projeto integra ferramentas como CMake e notebooks Python, permitindo maior flexibilidade na execução dos códigos e análise dos resultados, destacando os benefícios e limitações do paralelismo em aplicações científicas.
+
 \section{Implementação do Algorítimo}
 
 \subsection{Código Sequencial}
