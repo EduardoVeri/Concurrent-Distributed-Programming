@@ -51,11 +51,34 @@
 
 \section{Introdução}
 
-Este trabalho aborda a implementação e desempenho de um modelo de difusão numérica, utilizando diferenças finitas para simular a dispersão de contaminantes em uma matriz bidimensional. O objetivo principal é comparar as versões sequencial e paralela do algoritmo, avaliando o impacto do paralelismo na eficiência computacional.
+A contaminação de corpos d'água, tais como lagos e rios, é um grande desafio ao
+meio ambiente e a saúde pública, sendo preciso entender a dispersão do contaminante no
+ambiente para poder realizar qualquer intervenção de
+mitigação. Dessa forma, este trabalho foca na modelagem numérica da
+difusão de poluentes em uma matriz bidimensional, utilizando o método de
+diferenças finitas para aproximar a equação de difusão discreta:
 
-As implementações paralelas, desenvolvidas com OpenMP, exploram o processamento simultâneo de múltiplos núcleos, acelerando cálculos em simulações de grandes volumes de dados. Os resultados serão validados por meio de mapas de calor, gráficos de speedup, eficiência e comparação das matrizes geradas.
+\begin{equation}
+  C_{i,j}^{t+1} = C_{i,j}^t + D \cdot \Delta t \cdot \left( \frac{C_{i+1,j}^t +
+    C_{i-1,j}^t + C_{i,j+1}^t + C_{i,j-1}^t - 4 \cdot C_{i,j}^t}{\Delta x^2}
+  \right)
+  \label{eq:Difusao}
+\end{equation}
 
-O projeto integra ferramentas como CMake e notebooks Python, permitindo maior flexibilidade na execução dos códigos e análise dos resultados, destacando os benefícios e limitações do paralelismo em aplicações científicas.
+Nesta equação, $C_{i,j}^t$ representa a concentração do contaminante na célula
+$(i,j)$ no instante $t$, $D$ é o coeficiente de difusão, $\Delta t$ o intervalo
+de tempo discreto e
+$\Delta x$ o espaçamento espacial. O objetivo principal é desenvolver uma
+simulação que modele a difusão de contaminantes aplicando programação paralela
+para acelerar os cálculos e analisar o comportamento dos poluentes ao longo do
+tempo. Serão comparadas as versões sequencial e paralela do algoritmo,
+utilizando OpenMP, CUDA e MPI para explorar o processamento simultâneo em
+múltiplos núcleos e dispositivos. Os resultados serão validados por meio de
+mapas de calor, gráficos de speedup e eficiência, além da comparação das
+matrizes geradas. Este estudo demonstra como técnicas de programação
+concorrente e distribuída podem otimizar simulações numéricas complexas,
+reforçando os conceitos aprendidos na disciplina e demonstrando sua aplicação
+prática no desenvolvimento de soluções eficientes.
 
 \section{Implementação do Algorítimo}
 
@@ -80,17 +103,26 @@ biblioteca na estrutura do código sequencial.
 
 \begin{itemize}
   \item \#pragma omp parallel for collapse(2): É a diretiva que divide
-        automaticamente os loops de cálculo entre múltiplos threads. Cada thread é
-        responsável por atualizar uma parte distinta da matriz, permitindo que várias
-        partes do cálculo sejam realizadas simultaneamente. O uso de collapse(2) indica
-        que o compilador deve tratar múltiplas laços aninhados com um único para fins
-        de paralelismo. No caso do código de difusão, os dois laços de repetição
+        automaticamente os loops de cálculo entre múltiplos threads. Cada
+        thread é
+        responsável por atualizar uma parte distinta da matriz, permitindo que
+        várias
+        partes do cálculo sejam realizadas simultaneamente. O uso de
+        collapse(2) indica
+        que o compilador deve tratar múltiplas laços aninhados com um único
+        para fins
+        de paralelismo. No caso do código de difusão, os dois laços de
+        repetição
         aninhados serão linearizados.
   \item \#pragma omp parallel for reduction(+:difmedio) collapse(2): Essa
-        diretiva assim como a anterior executa as iterações do laço de repetição de
-        maneira paralela, com o adicional de reduções, que garantem que a operação de
-        somatório que monitora a convergência do algorítimo seja realizada de maneira
-        segura entre as diferentes threads que acessam as variáveis dessa operação.
+        diretiva assim como a anterior executa as iterações do laço de
+        repetição de
+        maneira paralela, com o adicional de reduções, que garantem que a
+        operação de
+        somatório que monitora a convergência do algorítimo seja realizada de
+        maneira
+        segura entre as diferentes threads que acessam as variáveis dessa
+        operação.
   \item omp\_set\_num\_threads(int num\_threads): Permite configurar
         dinamicamente o número de threads a serem utilizados pelo código, sendo
         extremamente útil para realizar as verificações de desempenho.
@@ -152,7 +184,7 @@ contaminação.
 
 \begin{figure}[ht]
   \centering
-  \includegraphics[width=.7\textwidth]{figs/heatmap.png}
+  \includegraphics[width=.6\textwidth]{figs/heatmap.png}
   \caption{Mapa de calor em quatro instantes distintos da simulação.}
   \label{fig:heatmap}
 \end{figure}
@@ -169,8 +201,9 @@ uniformemente pela matriz, com valores próximos entre si.
 \subsection{Análise de Desempenho}
 
 A análise de desempenho foi realizada em um computador \textit{desktop} com as
-seguintes especificações. Além disso, as especificações dos parâmetros do
-problema foram incluídas na tabela correspondente.
+especificações apresentadas na Tabela~\ref{tab:especificacaoHardware}. Ademais,
+as especificações dos parâmetros do
+problema foram incluídas na Tabela~\ref{tab:especificacaoSimulacao}.
 
 \begin{table}[ht]
   \centering
@@ -180,7 +213,7 @@ problema foram incluídas na tabela correspondente.
     \hline
     Especificações      & Detalhes                  \\ [0.5ex]
     \hline\hline
-    Processador         & Intel i7--4790 @ 3.60GHz   \\
+    Processador         & Intel i7--4790 @ 3.60GHz  \\
     \hline
     Núcleos / Lógicos   & 4 / 8                     \\
     \hline
@@ -189,6 +222,7 @@ problema foram incluídas na tabela correspondente.
     Sistema Operacional & Ubuntu 22.04.05 (via WSL) \\
     \hline
   \end{tabular}
+  \label{tab:especificacaoHardware}
 \end{table}
 
 \begin{table}[ht]
@@ -212,6 +246,7 @@ problema foram incluídas na tabela correspondente.
     dx                         & 1.0                         \\
     \hline
   \end{tabular}
+  \label{tab:especificacaoSimulacao}
 \end{table}
 
 Para obter valores mais consistentes e minimizar influências externas, como
@@ -247,14 +282,14 @@ paralelo correspondente, enquanto a eficiência é determinada ao dividir o
 
 \begin{figure}[ht]
   \centering
-  \includegraphics[width=.5\textwidth]{figs/speedupxthreads.png}
+  \includegraphics[width=.45\textwidth]{figs/speedupxthreads.png}
   \caption{Gráfico do \textit{speedup} por número de \textit{threads}}
   \label{fig:speedupOMP}
 \end{figure}
 
 \begin{figure}[ht]
   \centering
-  \includegraphics[width=.5\textwidth]{figs/eficienciaxthreads.png}
+  \includegraphics[width=.45\textwidth]{figs/eficienciaxthreads.png}
   \caption{Gráfico da eficiência por número de \textit{threads}}
   \label{fig:eficienciaOMP}
 \end{figure}
@@ -279,8 +314,7 @@ escalabilidade, possivelmente devido a fatores como \textit{overheads} de
 sincronização e restrições arquiteturais do hardware utilizado. Assim, este
 trabalho reforça os conceitos fundamentais aprendidos em programação
 concorrente e distribuída, evidenciando as vantagens práticas da paralelização
-em termos de desempenho e eficiência em simulações numéricas. 
-
+em termos de desempenho e eficiência em simulações numéricas.
 
 \bibliographystyle{sbc}
 \bibliography{sbc-template}
