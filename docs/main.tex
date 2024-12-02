@@ -92,7 +92,7 @@ matriz representa a concentração de uma substância em um ponto do espaço.
 O cálculo é realizado em um laço de repetição que itera sobre todas as células
 da matriz. A atualização de cada célula depende da média das concentrações dos
 seus vizinhos imediatos e de parâmetros físicos como coeficiente de difusão, o
-intervalo de tempo \textit{dt} e o espaçamento espacial \textit{dx}.
+intervalo de tempo $\Delta t$ e o espaçamento espacial $\Delta x$.
 
 \subsection{Código Paralelo}
 
@@ -241,9 +241,9 @@ problema foram incluídas na Tabela~\ref{tab:especificacaoSimulacao}.
     \hline
     Coeficiente de Difusão     & 0.1                         \\
     \hline
-    dt                         & 0.01                        \\
+    $\Delta t$                         & 0.01                        \\
     \hline
-    dx                         & 1.0                         \\
+    $\Delta x$                         & 1.0                         \\
     \hline
   \end{tabular}
   \label{tab:especificacaoSimulacao}
