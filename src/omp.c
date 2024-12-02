@@ -5,11 +5,12 @@
 #include "utils.h"
 #include <sys/time.h>
 
-void omp_diff_eq(double **C, double **C_new, DiffEqArgs *args){
+double omp_diff_eq(double **C, double **C_new, DiffEqArgs *args){
     int N = args->N;
     double D = args->D;
     double DELTA_T = args->DELTA_T;
     double DELTA_X = args->DELTA_X;
+    double difmedio = 0.;
 
     #pragma omp parallel for collapse(2)
     for (int i = 1; i < N - 1; i++) {
@@ -18,12 +19,15 @@ void omp_diff_eq(double **C, double **C_new, DiffEqArgs *args){
         }
     }
     
-    #pragma omp parallel for collapse(2)
+    #pragma omp parallel for reduction(+:difmedio) collapse(2)
     for (int i = 1; i < N - 1; i++) {
         for (int j = 1; j < N - 1; j++) {
+            difmedio += fabs(C_new[i][j] - C[i][j]);
             C[i][j] = C_new[i][j];
         }
     }
+
+    return difmedio / ((N-2)*(N-2));
 }
 
 #ifndef BUILD_SHARED
@@ -60,12 +64,16 @@ int main(int argc, char *argv[]) {
     // Call the function T times
     gettimeofday(&start_parallel, NULL);    
     for (int t = 0; t < T; t++) {
-        omp_diff_eq(C, C_new, &args);
+        double difmedio = omp_diff_eq(C, C_new, &args);
+        if ((t%100) == 0)
+          printf("interacao %d - diferenca = %g\n", t, difmedio);
     }
     gettimeofday(&end_parallel, NULL);
 
     // Show concentration at the center
     printf("Concentração final no centro: %f\n", C[N / 2][N / 2]);
+
+    salvar_matriz(C, N, N, "matriz_omp.txt");
 
     // show_matrix(C);
     free_matrix(C, N);

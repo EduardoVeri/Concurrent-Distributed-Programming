@@ -81,11 +81,11 @@ class DiffusionEquation:
     def _define_c_functions(self):
         # Define the argument and return types for sequential_diff_eq
         self.lib.sequential_diff_eq.argtypes = self.FUNCTION_PARAMS
-        self.lib.sequential_diff_eq.restype = None  # void
+        self.lib.sequential_diff_eq.restype = c_double
 
         # Define the argument and return types for omp_diff_eq
         self.lib.omp_diff_eq.argtypes = self.FUNCTION_PARAMS
-        self.lib.omp_diff_eq.restype = None  # void
+        self.lib.omp_diff_eq.restype = c_double 
 
         # Open MP set max number of threads
         self.lib.omp_set_num_threads.argtypes = [c_int]
@@ -110,13 +110,13 @@ class DiffusionEquation:
             row_ptrs[i] = array[i].ctypes.data_as(POINTER(c_double))
         return row_ptrs
 
-    def sequential_step(self):
-        self.lib.sequential_diff_eq(
+    def sequential_step(self) -> float:
+        return self.lib.sequential_diff_eq(
             self.__C_ptr, self.__C_new_ptr, ctypes.byref(self.args)
         )
 
-    def omp_step(self):
-        self.lib.omp_diff_eq(self.__C_ptr, self.__C_new_ptr, ctypes.byref(self.args))
+    def omp_step(self) -> float:
+        return self.lib.omp_diff_eq(self.__C_ptr, self.__C_new_ptr, ctypes.byref(self.args))
 
     def set_num_threads(self, num_threads: int):
         self.lib.omp_set_num_threads(num_threads)

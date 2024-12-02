@@ -1,3 +1,13 @@
+# Parallel Simulation of Contaminant Diffusion in Water
+
+This project implements a numerical model to simulate the diffusion of contaminants in water bodies, using sequential and parallel methods to optimize performance. Based on the diffusion equation, it explores the efficiency of parallel approaches with OpenMP and provides a Python interface to facilitate usage in advanced analyses.
+
+📄 **Full article can be accessed [here](./docs/).**
+
+<p float="left">
+    <img src="./data/gifs/simulation_circle.gif" width="" height="300" />
+    <img src="./data/gifs/simulation_X.gif" width="" height="300" />
+</p>
 
 ## Build the Project
 This project is built using CMake. You can install it using the following command:
@@ -8,10 +18,20 @@ sudo apt-get install cmake build-essential -y
 
 To build the project, you can use the following commands on the project root directory:
 ```bash
-mkdir build
+# Generate configuration files. 
+# Run this command only once or when you want to change the optimization flag
 cmake -B build -S . [-DNO_OPTIMIZATION=ON/OFF]
-cmake --build build
+
+# Run this command every time you want to compile the project
+cmake --build build 
 ```
+
+Otherwise, you can use the following shell script to build the project:
+```bash
+./build.sh
+```
+
+Obs: if you are using __Windows__, use the `gcc` commands inside the script to compile the project.
 
 This will create a `build` directory and generate three files in it:
 - sequential (executable)

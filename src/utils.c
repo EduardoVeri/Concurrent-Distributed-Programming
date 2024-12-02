@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdio.h>
 
 double ** create_matrix(int N){
     double **matrix = (double **)malloc(N * sizeof(double *));
@@ -23,4 +24,23 @@ void free_matrix(double **matrix, int N){
         free(matrix[i]);
     }
     free(matrix);
+}
+
+
+void salvar_matriz(double **matriz, int linhas, int colunas, const char *nome_arquivo) {
+    FILE *arquivo = fopen(nome_arquivo, "w");
+    if (!arquivo) {
+        perror("Erro ao abrir o arquivo para salvar matriz");
+        return;
+    }
+
+    for (int i = 0; i < linhas; i++) {
+        for (int j = 0; j < colunas; j++) {
+            fprintf(arquivo, "%.6f ", matriz[i][j]); // Salva com 6 casas decimais
+        }
+        fprintf(arquivo, "\n");
+    }
+
+    fclose(arquivo);
+    printf("Matriz salva no arquivo: %s\n", nome_arquivo);
 }
