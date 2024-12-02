@@ -1,3 +1,13 @@
+# Parallel Simulation of Contaminant Diffusion in Water
+
+This project implements a numerical model to simulate the diffusion of contaminants in water bodies, using sequential and parallel methods to optimize performance. Based on the diffusion equation, it explores the efficiency of parallel approaches with OpenMP and provides a Python interface to facilitate usage in advanced analyses.
+
+📄 **Full article can be accessed [here](./docs/).**
+
+<p float="left">
+    <img src="./data/gifs/simulation_circle.gif" width="" height="300" />
+    <img src="./data/gifs/simulation_X.gif" width="" height="300" />
+</p>
 
 ## Build the Project
 This project is built using CMake. You can install it using the following command:
