@@ -19,16 +19,16 @@
 // Structure to hold diffusion equation parameters
 typedef struct {
     int N;
-    float D;
-    float DELTA_T;
-    float DELTA_X;
+    double D;
+    double DELTA_T;
+    double DELTA_X;
 } DiffEqArgs;
 
 // Utility function to create and initialize a matrix
-float** create_matrix_and_init(int N) {
-    float **matrix = (float**)malloc(N * sizeof(float*));
+double** create_matrix_and_init(int N) {
+    double **matrix = (double**)malloc(N * sizeof(double*));
     for (int i = 0; i < N; i++) {
-        matrix[i] = (float*)calloc(N, sizeof(float));
+        matrix[i] = (double*)calloc(N, sizeof(double));
     }
     // Initialize center
     matrix[N/2][N/2] = 1.0f;
@@ -36,16 +36,16 @@ float** create_matrix_and_init(int N) {
 }
 
 // Utility function to create a matrix
-float** create_matrix(int N) {
-    float **matrix = (float**)malloc(N * sizeof(float*));
+double** create_matrix(int N) {
+    double **matrix = (double**)malloc(N * sizeof(double*));
     for (int i = 0; i < N; i++) {
-        matrix[i] = (float*)calloc(N, sizeof(float));
+        matrix[i] = (double*)calloc(N, sizeof(double));
     }
     return matrix;
 }
 
 // Utility function to free a matrix
-void free_matrix(float **matrix, int N) {
+void free_matrix(double **matrix, int N) {
     for (int i = 0; i < N; i++) {
         free(matrix[i]);
     }
@@ -53,9 +53,9 @@ void free_matrix(float **matrix, int N) {
 }
 
 // Optimized kernel combining compute and reduction
-__global__ void compute_and_diff_kernel(const float *C, float *C_new, float *block_sums, int N, float D, float DELTA_T, float DELTA_X) {
+__global__ void compute_and_diff_kernel(const double *C, double *C_new, double *block_sums, int N, double D, double DELTA_T, double DELTA_X) {
     // Define shared memory for reduction
-    extern __shared__ float sdata[];
+    extern __shared__ double sdata[];
 
     // Calculate global indices
     int i = blockIdx.y * blockDim.y + threadIdx.y;
@@ -65,18 +65,18 @@ __global__ void compute_and_diff_kernel(const float *C, float *C_new, float *blo
     int idx = i * N + j;
 
     // Initialize difference value
-    float diff_val = 0.0f;
+    double diff_val = 0.0f;
 
     // Perform computation if within bounds
     if (i > 0 && i < N-1 && j > 0 && j < N-1) {
-        float center = C[idx];
-        float up = C[(i-1)*N + j];
-        float down = C[(i+1)*N + j];
-        float left = C[i*N + (j-1)];
-        float right = C[i*N + (j+1)];
+        double center = C[idx];
+        double up = C[(i-1)*N + j];
+        double down = C[(i+1)*N + j];
+        double left = C[i*N + (j-1)];
+        double right = C[i*N + (j+1)];
 
         // Compute new value using diffusion equation
-        float new_val = center + D * DELTA_T * ((up + down + left + right - 4.0f * center) / (DELTA_X * DELTA_X));
+        double new_val = center + D * DELTA_T * ((up + down + left + right - 4.0f * center) / (DELTA_X * DELTA_X));
         C_new[idx] = new_val;
 
         // Compute absolute difference
@@ -99,7 +99,7 @@ __global__ void compute_and_diff_kernel(const float *C, float *C_new, float *blo
 
     // Unroll last warp
     if (tid < 32) {
-        volatile float* vsmem = sdata;
+        volatile double* vsmem = sdata;
         vsmem[tid] += vsmem[tid + 32];
         vsmem[tid] += vsmem[tid + 16];
         vsmem[tid] += vsmem[tid + 8];
@@ -115,17 +115,17 @@ __global__ void compute_and_diff_kernel(const float *C, float *C_new, float *blo
 }
 
 // Host function to perform optimized diffusion equation computation
-float cuda_diff_eq_optimized(float **C_host, float **C_new_host, DiffEqArgs *args, int T) {
+double cuda_diff_eq_optimized(double **C_host, double **C_new_host, DiffEqArgs *args, int T) {
     int N = args->N;
-    float D = args->D;
-    float DELTA_T = args->DELTA_T;
-    float DELTA_X = args->DELTA_X;
+    double D = args->D;
+    double DELTA_T = args->DELTA_T;
+    double DELTA_X = args->DELTA_X;
 
-    size_t size = N * N * sizeof(float);
+    size_t size = N * N * sizeof(double);
 
     // Flatten host arrays
-    float *C_flat = (float*)malloc(size);
-    float *C_new_flat = (float*)malloc(size);
+    double *C_flat = (double*)malloc(size);
+    double *C_new_flat = (double*)malloc(size);
     for (int i = 0; i < N; i++) {
         for (int j = 0; j < N; j++) {
             C_flat[i*N + j] = C_host[i][j];
@@ -134,7 +134,7 @@ float cuda_diff_eq_optimized(float **C_host, float **C_new_host, DiffEqArgs *arg
     }
 
     // Allocate device memory
-    float *d_C, *d_C_new;
+    double *d_C, *d_C_new;
     CUDA_CHECK(cudaMalloc((void**)&d_C, size));
     CUDA_CHECK(cudaMalloc((void**)&d_C_new, size));
     CUDA_CHECK(cudaMemcpy(d_C, C_flat, size, cudaMemcpyHostToDevice));
@@ -145,21 +145,21 @@ float cuda_diff_eq_optimized(float **C_host, float **C_new_host, DiffEqArgs *arg
     dim3 gridDim((N + blockDim.x - 1)/blockDim.x, (N + blockDim.y - 1)/blockDim.y);
 
     int num_blocks = gridDim.x * gridDim.y;
-    float *d_block_sums;
-    CUDA_CHECK(cudaMalloc((void**)&d_block_sums, num_blocks * sizeof(float)));
+    double *d_block_sums;
+    CUDA_CHECK(cudaMalloc((void**)&d_block_sums, num_blocks * sizeof(double)));
 
     // Allocate host memory for block sums
-    float *h_block_sums = (float*)malloc(num_blocks * sizeof(float));
+    double *h_block_sums = (double*)malloc(num_blocks * sizeof(double));
 
-    size_t smem_size = blockDim.x * blockDim.y * sizeof(float);
+    size_t smem_size = blockDim.x * blockDim.y * sizeof(double);
 
     // Create CUDA stream for overlapping (optional)
     cudaStream_t stream;
     CUDA_CHECK(cudaStreamCreate(&stream));
 
     // Initialize pointers for pointer swapping
-    float *current = d_C;
-    float *next = d_C_new;
+    double *current = d_C;
+    double *next = d_C_new;
 
     // Main loop
     for (int t = 0; t < T; t++) {
@@ -173,20 +173,20 @@ float cuda_diff_eq_optimized(float **C_host, float **C_new_host, DiffEqArgs *arg
             CUDA_CHECK(cudaStreamSynchronize(stream));
 
             // Copy block sums to host
-            CUDA_CHECK(cudaMemcpyAsync(h_block_sums, d_block_sums, num_blocks * sizeof(float), cudaMemcpyDeviceToHost, stream));
+            CUDA_CHECK(cudaMemcpyAsync(h_block_sums, d_block_sums, num_blocks * sizeof(double), cudaMemcpyDeviceToHost, stream));
             CUDA_CHECK(cudaStreamSynchronize(stream));
 
             // Compute total difference on host
-            float total_diff = 0.0f;
+            double total_diff = 0.0f;
             for (int i = 0; i < num_blocks; i++) {
                 total_diff += h_block_sums[i];
             }
-            float difmedio = total_diff / ((N-2)*(N-2));
+            double difmedio = total_diff / ((N-2)*(N-2));
             printf("Iteration %d - Difference = %g\n", t, difmedio);
         }
 
         // Swap pointers for next iteration
-        float *temp = current;
+        double *temp = current;
         current = next;
         next = temp;
     }
@@ -204,7 +204,7 @@ float cuda_diff_eq_optimized(float **C_host, float **C_new_host, DiffEqArgs *arg
         }
     }
 
-    float final_val = C_host[N/2][N/2];
+    double final_val = C_host[N/2][N/2];
 
     // Cleanup
     free(C_flat);
@@ -229,20 +229,20 @@ int main(int argc, char *argv[]) {
 
     int N = atoi(argv[1]);
     int T = atoi(argv[2]);
-    float D = atof(argv[3]);
-    float DELTA_T = atof(argv[4]);
-    float DELTA_X = atof(argv[5]);
+    double D = atof(argv[3]);
+    double DELTA_T = atof(argv[4]);
+    double DELTA_X = atof(argv[5]);
     int NUM_THREADS = atoi(argv[6]); // Not used in CUDA
 
     // Initialize matrices
-    float **C = create_matrix_and_init(N);
-    float **C_new = create_matrix(N);
+    double **C = create_matrix_and_init(N);
+    double **C_new = create_matrix(N);
 
     DiffEqArgs args = {N, D, DELTA_T, DELTA_X};
     gettimeofday(&start_parallel, NULL);
 
     // Perform diffusion computation
-    float final_val = cuda_diff_eq_optimized(C, C_new, &args, T);
+    double final_val = cuda_diff_eq_optimized(C, C_new, &args, T);
 
     gettimeofday(&end_parallel, NULL);
     printf("Final concentration at center: %f\n", final_val);
