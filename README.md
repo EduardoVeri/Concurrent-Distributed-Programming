@@ -81,29 +81,34 @@ The `-e` flag installs the module in editable mode, which means that any changes
 Here is an example of how to use the diffusion Python module to solve a 2D diffusion equation:
 
 ```python
-from diffusion import DiffusionEquation
+from diffusion import SequentialDiffusionEquation, OMPdiffusionEquation 
 
-# Path to the compiled shared library
-library_path = "build/libDiffusionEquation.so"
+lib_path = "./build/libDiffusionEquation.so"
 
-# Initialize the DiffusionEquation class
-diffusion = DiffusionEquation(
-    library_path=library_path,
-    N=500,             # Grid size
-    D=0.1,             # Diffusion coefficient
-    DELTA_T=0.01,      # Time step
-    DELTA_X=1.0,       # Spatial step
+# Initialize the sequential solver
+seq_solver = SequentialDiffusionEquation(
+    library_path=lib_path, N=200, D=0.05, DELTA_T=0.02, DELTA_X=1.0
 )
 
-# Set initial concentration (optional)
-initial_points = {(250, 250): 1.0}  # Set concentration at the center
-diffusion.set_initial_concentration(initial_points)
+# Set the initial concentration at the center
+seq_solver.set_initial_concentration({(100, 100): 1.0})
 
-# Perform diffusion steps
-for _ in range(1000):
-    diffusion.sequential_step()  # Use omp_step() for OpenMP parallel computation
-    
-# Access the concentration matrix
-concentration = diffusion.concentration_matrix
-print("Concentration at center:", concentration[diffusion.N // 2, diffusion.N // 2])
+diff_seq = seq_solver.step()  # Perform a simulation step
+print(f"Sequential diffusion value: {diff_seq}")
+
+# Initialize the OpenMP solver
+omp_solver = OMPdiffusionEquation(
+    library_path=lib_path, N=200, D=0.05, DELTA_T=0.02, DELTA_X=1.0
+)
+
+seq_solver.set_initial_concentration({(100, 100): 1.0})
+
+# Set the number of threads for OpenMP
+omp_solver.set_num_threads(8)
+
+diff_omp = omp_solver.step()
+print(f"OpenMP diffusion value: {diff_omp}")
+
+# Access the current concentration matrix
+print(omp_solver.concentration_matrix[100][100])
 ```

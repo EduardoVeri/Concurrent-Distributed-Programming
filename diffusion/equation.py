@@ -285,26 +285,29 @@ class OMPdiffusionEquation(BaseDiffusionEquation):
 
 if __name__ == "__main__":
     # Paths to your shared C libraries
-    sequential_lib_path = "/path/to/sequential_diff_eq_library.so"
+    lib_path = "../build/libDiffusionEquation.so"
 
     # Initialize the sequential solver
     seq_solver = SequentialDiffusionEquation(
-        library_path=sequential_lib_path, N=200, D=0.05, DELTA_T=0.02, DELTA_X=1.0
+        library_path=lib_path, N=200, D=0.05, DELTA_T=0.02, DELTA_X=1.0
     )
 
-    # Perform a simulation step
-    diff_seq = seq_solver.step()
+    # Set the initial concentration at the center
+    seq_solver.set_initial_concentration({(100, 100): 1.0})
+
+    diff_seq = seq_solver.step()  # Perform a simulation step
     print(f"Sequential diffusion value: {diff_seq}")
 
     # Initialize the OpenMP solver
-    omp_solver = OMPSdiffusionEquation(
-        library_path=omp_lib_path, N=200, D=0.05, DELTA_T=0.02, DELTA_X=1.0
+    omp_solver = OMPdiffusionEquation(
+        library_path=lib_path, N=200, D=0.05, DELTA_T=0.02, DELTA_X=1.0
     )
+
+    seq_solver.set_initial_concentration({(100, 100): 1.0})
 
     # Set the number of threads for OpenMP
     omp_solver.set_num_threads(8)
 
-    # Perform a simulation step
     diff_omp = omp_solver.step()
     print(f"OpenMP diffusion value: {diff_omp}")
 
