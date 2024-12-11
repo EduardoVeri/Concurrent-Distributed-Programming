@@ -1,1 +1,1 @@
-from .equation import SequentialDiffusionEquation, OMPdiffusionEquation
+from .equation import SequentialDiffusionEquation, OMPdiffusionEquation, BaseDiffusionEquation
