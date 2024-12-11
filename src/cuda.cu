@@ -115,7 +115,7 @@ __global__ void compute_and_diff_kernel(const double *C, double *C_new, double *
 }
 
 // Host function to perform optimized diffusion equation computation
-double cuda_diff_eq_optimized(double **C_host, double **C_new_host, DiffEqArgs *args, int T) {
+double cuda_diff_eq(double **C_host, double **C_new_host, DiffEqArgs *args, int T) {
     int N = args->N;
     double D = args->D;
     double DELTA_T = args->DELTA_T;
@@ -242,7 +242,7 @@ int main(int argc, char *argv[]) {
     gettimeofday(&start_parallel, NULL);
 
     // Perform diffusion computation
-    double final_val = cuda_diff_eq_optimized(C, C_new, &args, T);
+    double final_val = cuda_diff_eq(C, C_new, &args, T);
 
     gettimeofday(&end_parallel, NULL);
     printf("Final concentration at center: %f\n", final_val);
