@@ -89,10 +89,10 @@ class BaseDiffusionEquation(ABC):
         self.N = N
         self.args.N = self.N
         self.C = np.zeros((self.N, self.N), dtype=np.float64)
-        self.__C_ptr = self._convert_numpy_to_double_ptr_ptr(self.C)
+        self._C_ptr = self._convert_numpy_to_double_ptr_ptr(self.C)
 
         self.C_new = np.zeros((self.N, self.N), dtype=np.float64)
-        self.__C_new_ptr = self._convert_numpy_to_double_ptr_ptr(self.C_new)
+        self._C_new_ptr = self._convert_numpy_to_double_ptr_ptr(self.C_new)
 
     def set_diffusion_parameters(self, D: float, DELTA_T: float, DELTA_X: float):
         """
@@ -180,6 +180,19 @@ class SequentialDiffusionEquation(BaseDiffusionEquation):
     Sequential implementation of the diffusion equation solver.
     """
 
+    def __init__(
+        self,
+        library_path,
+        initial_concentration_points=None,
+        N=100,
+        D=0.1,
+        DELTA_T=0.01,
+        DELTA_X=1,
+    ):
+        super().__init__(
+            library_path, initial_concentration_points, N, D, DELTA_T, DELTA_X
+        )
+
     def _define_c_functions(self):
         """
         Define the argument and return types for the sequential_diff_eq C function.
@@ -199,18 +212,31 @@ class SequentialDiffusionEquation(BaseDiffusionEquation):
         :return: The computed diffusion value.
         """
         diff = self.lib.sequential_diff_eq(
-            self.__C_ptr, self.__C_new_ptr, ctypes.byref(self.args)
+            self._C_ptr, self._C_new_ptr, ctypes.byref(self.args)
         )
         # Swap the concentration matrices
         self.C, self.C_new = self.C_new, self.C
-        self.__C_ptr, self.__C_new_ptr = self.__C_new_ptr, self.__C_ptr
+        self._C_ptr, self._C_new_ptr = self._C_new_ptr, self._C_ptr
         return diff
 
 
-class OMPSdiffusionEquation(BaseDiffusionEquation):
+class OMPdiffusionEquation(BaseDiffusionEquation):
     """
     OpenMP (parallel) implementation of the diffusion equation solver.
     """
+
+    def __init__(
+        self,
+        library_path,
+        initial_concentration_points=None,
+        N=100,
+        D=0.1,
+        DELTA_T=0.01,
+        DELTA_X=1,
+    ):
+        super().__init__(
+            library_path, initial_concentration_points, N, D, DELTA_T, DELTA_X
+        )
 
     def _define_c_functions(self):
         """
@@ -249,11 +275,11 @@ class OMPSdiffusionEquation(BaseDiffusionEquation):
         :return: The computed diffusion value.
         """
         diff = self.lib.omp_diff_eq(
-            self.__C_ptr, self.__C_new_ptr, ctypes.byref(self.args)
+            self._C_ptr, self._C_new_ptr, ctypes.byref(self.args)
         )
         # Swap the concentration matrices
         self.C, self.C_new = self.C_new, self.C
-        self.__C_ptr, self.__C_new_ptr = self.__C_new_ptr, self.__C_ptr
+        self._C_ptr, self._C_new_ptr = self._C_new_ptr, self._C_ptr
         return diff
 
 
