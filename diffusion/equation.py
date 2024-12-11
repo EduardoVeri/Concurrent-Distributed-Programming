@@ -1,6 +1,6 @@
 import ctypes
 import numpy as np
-import os
+from os import path as os_path
 from ctypes import POINTER, c_int, c_double, Structure
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Tuple, Optional
@@ -68,7 +68,7 @@ class BaseDiffusionEquation(ABC):
         :return: Loaded CDLL object.
         :raises FileNotFoundError: If the library does not exist at the given path.
         """
-        if not os.path.exists(path):
+        if not os_path.exists(path):
             raise FileNotFoundError(f"Shared library not found at path: {path}")
         return ctypes.CDLL(path)
 
