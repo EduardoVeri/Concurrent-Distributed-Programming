@@ -1,33 +1,27 @@
+#include <omp.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <omp.h>
-#include "diff_eq.h"
-#include "utils.h"
 #include <sys/time.h>
 
-double omp_diff_eq(double **C, double **C_new, DiffEqArgs *args){
+#include "diff_eq.h"
+#include "utils.h"
+
+double omp_diff_eq(double **C, double **C_new, DiffEqArgs *args) {
     int N = args->N;
     double D = args->D;
     double DELTA_T = args->DELTA_T;
     double DELTA_X = args->DELTA_X;
     double difmedio = 0.;
 
-    #pragma omp parallel for collapse(2)
+#pragma omp parallel for collapse(2) reduction(+ : difmedio)
     for (int i = 1; i < N - 1; i++) {
         for (int j = 1; j < N - 1; j++) {
             C_new[i][j] = C[i][j] + D * DELTA_T * ((C[i + 1][j] + C[i - 1][j] + C[i][j + 1] + C[i][j - 1] - 4 * C[i][j]) / (DELTA_X * DELTA_X));
-        }
-    }
-    
-    #pragma omp parallel for reduction(+:difmedio) collapse(2)
-    for (int i = 1; i < N - 1; i++) {
-        for (int j = 1; j < N - 1; j++) {
             difmedio += fabs(C_new[i][j] - C[i][j]);
-            C[i][j] = C_new[i][j];
         }
     }
 
-    return difmedio / ((N-2)*(N-2));
+    return difmedio / ((N - 2) * (N - 2));
 }
 
 #ifndef BUILD_SHARED
@@ -52,7 +46,7 @@ int main(int argc, char *argv[]) {
     omp_set_num_threads(NUM_THREADS);
 
     // Create matrix
-    double **C = create_matrix_and_init(N); 
+    double **C = create_matrix_and_init(N);
     double **C_new = create_matrix(N);
 
     // Initial condition
@@ -62,11 +56,17 @@ int main(int argc, char *argv[]) {
     DiffEqArgs args = {N, D, DELTA_T, DELTA_X};
 
     // Call the function T times
-    gettimeofday(&start_parallel, NULL);    
+    gettimeofday(&start_parallel, NULL);
     for (int t = 0; t < T; t++) {
         double difmedio = omp_diff_eq(C, C_new, &args);
-        if ((t%100) == 0)
-          printf("interacao %d - diferenca = %g\n", t, difmedio);
+
+        // Swap pointers
+        double **temp = C;
+        C = C_new;
+        C_new = temp;
+
+        if ((t % 100) == 0)
+            printf("interacao %d - diferenca = %g\n", t, difmedio);
     }
     gettimeofday(&end_parallel, NULL);
 
@@ -83,11 +83,11 @@ int main(int argc, char *argv[]) {
     double total_time = ((end.tv_sec * 1000000 + end.tv_usec) - (start.tv_sec * 1000000 + start.tv_usec)) / 1000;
     double parallel_time = ((end_parallel.tv_sec * 1000000 + end_parallel.tv_usec) - (start_parallel.tv_sec * 1000000 + start_parallel.tv_usec)) / 1000;
     double sequential_time = total_time - parallel_time;
-    
+
     printf("Tempo total: %lf ms\n", total_time);
     printf("Tempo paralelo: %lf ms\n", parallel_time);
     printf("Tempo sequencial: %lf ms\n", sequential_time);
-    
+
     return 0;
 }
 #endif
