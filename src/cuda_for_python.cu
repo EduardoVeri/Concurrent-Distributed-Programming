@@ -165,19 +165,23 @@ void cuda_finalize() {
 } // extern "C"
 
 
-int main() {
-    // Initialize host data
-    int N = 1024;
-    double D = 0.1;
-    double DELTA_T = 0.01;
-    double DELTA_X = 0.1;
+int main(int argc, char* argv[]) {
+    // Check arguments
+    if (argc != 6) {
+        printf("Usage: %s <N> <T> <D> <DELTA_T> <DELTA_X>\n", argv[0]);
+        return 1;
+    }
+
+    // Parse arguments
+    int N = atoi(argv[1]);
+    int T = atof(argv[2]);
+    double D = atof(argv[3]);
+    double DELTA_T = atof(argv[4]);
+    double DELTA_X = atof(argv[5]);
+
     size_t size = N * N * sizeof(double);
     double *C_flat = (double*)malloc(size);
     double *C_new_flat = (double*)malloc(size);
-    double **C_host = (double**)malloc(N * sizeof(double*));
-    for (int i = 0; i < N; i++) {
-        C_host[i] = &C_flat[i * N];
-    }
 
     C_flat[N*N/2 + N/2] = 1.0;
 
@@ -186,7 +190,7 @@ int main() {
     cuda_init(C_flat, C_new_flat, &args);
 
     // Main loop
-    for (int t = 0; t < 1000; t++) {
+    for (int t = 0; t < T; t++) {
         double difmedio = cuda_step(&args);
         if (t % 100 == 0)
             printf("Iteration %d - Difference = %g\n", t, difmedio);
@@ -195,20 +199,12 @@ int main() {
     // Copy final data back to host
     cuda_get_result(C_flat, N);
 
-    // Reconstruct host matrix
-    for (int i = 0; i < N; i++) {
-        for (int j = 0; j < N; j++) {
-            C_host[i][j] = C_flat[i*N + j];
-        }
-    }
-
-    double final_val = C_host[N/2][N/2];
-    printf("Final value: %g\n", final_val);
+    // Print final at center
+    printf("Final value: %g\n", C_flat[N*N/2 + N/2]);
 
     // Cleanup
     free(C_flat);
     free(C_new_flat);
-    free(C_host);
     cuda_finalize();
 
     return 0;
