@@ -87,6 +87,7 @@ extern "C" {
 void cuda_init(double *h_C_flat, double *h_C_new_flat, DiffEqArgs *args) {
     int N = args->N;
     size_t size = N * N * sizeof(double);
+    num_blocks = ((N - 2 + blockDimX - 1) / blockDimX) * ((N - 2 + blockDimY - 1) / blockDimY);
     CUDA_CHECK(cudaMalloc((void**)&d_C, size));
     CUDA_CHECK(cudaMalloc((void**)&d_C_new, size));
     CUDA_CHECK(cudaMalloc((void**)&d_block_sums, num_blocks * sizeof(double)));
@@ -95,7 +96,6 @@ void cuda_init(double *h_C_flat, double *h_C_new_flat, DiffEqArgs *args) {
     CUDA_CHECK(cudaMemcpy(d_C_new, h_C_new_flat, size, cudaMemcpyHostToDevice));
     CUDA_CHECK(cudaStreamCreate(&stream));
 
-    num_blocks = ((N - 2 + blockDimX - 1) / blockDimX) * ((N - 2 + blockDimY - 1) / blockDimY);
 }
 
 // Perform a single time step
