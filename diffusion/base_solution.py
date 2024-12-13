@@ -79,7 +79,14 @@ class BaseDiffusionEquation(ABC):
         Must be implemented by subclasses.
         """
         pass
-
+    
+    def __enter__(self):
+        return self
+    
+    def __exit__(self):
+        # Don't do any cleanup here. The other classes will handle as needed.
+        pass
+    
     def reset_concentration_matrix(self, N: int):
         """
         Reset the concentration matrices to zero.
