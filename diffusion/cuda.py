@@ -128,3 +128,19 @@ class CUDADiffusionEquation(BaseDiffusionEquation):
         if self._cuda_initialized:
             self.lib.cuda_finalize()
             self._cuda_initialized = False
+
+
+if __name__ == "__main__":
+    library_path = "build/libcuda.so"
+
+    with CUDADiffusionEquation(
+        library_path,
+        N=500,
+        D=0.1,
+        DELTA_T=0.01,
+        DELTA_X=1.0,
+        initial_concentration_points={(250, 250): 1.0},
+    ) as diffusion:
+        for _ in range(1000):
+            diffusion.step()
+        diffusion.get_result()
