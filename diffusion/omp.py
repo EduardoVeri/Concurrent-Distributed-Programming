@@ -2,6 +2,7 @@ from .base_solution import BaseDiffusionEquation
 import ctypes
 from ctypes import c_double, c_int
 
+
 class OMPdiffusionEquation(BaseDiffusionEquation):
     """
     OpenMP (parallel) implementation of the diffusion equation solver.

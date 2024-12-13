@@ -2,6 +2,7 @@ from .base_solution import BaseDiffusionEquation
 import ctypes
 from ctypes import c_double
 
+
 class SequentialDiffusionEquation(BaseDiffusionEquation):
     """
     Sequential implementation of the diffusion equation solver.
@@ -41,6 +42,7 @@ class SequentialDiffusionEquation(BaseDiffusionEquation):
         diff = self.lib.sequential_diff_eq(
             self._C_ptr, self._C_new_ptr, ctypes.byref(self.args)
         )
+
         # Swap the concentration matrices
         self.C, self.C_new = self.C_new, self.C
         self._C_ptr, self._C_new_ptr = self._C_new_ptr, self._C_ptr

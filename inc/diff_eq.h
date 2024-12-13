@@ -10,5 +10,6 @@ typedef struct {
 
 double sequential_diff_eq(double **C, double **C_new, DiffEqArgs *args);
 double omp_diff_eq(double **C, double **C_new, DiffEqArgs *args);
+double cuda_diff_eq(double **C, double **C_new, DiffEqArgs *args);
 
 #endif
