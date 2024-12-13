@@ -64,8 +64,6 @@ __global__ void diffusion_kernel(double *C, double *C_new, double *block_sums, i
         __syncthreads();
     }
 
-    __syncthreads();
-
     if (tid < 32) {
         volatile double* vsmem = sdata;
         vsmem[tid] += vsmem[tid + 32];
