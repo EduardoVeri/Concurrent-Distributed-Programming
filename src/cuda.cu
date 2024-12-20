@@ -2,6 +2,8 @@
 #include <cuda_runtime.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "diff_eq.h"
+
 
 #define CUDA_CHECK(err) \
     do { \
@@ -13,14 +15,6 @@
         } \
     } while (0)
 
-// Structure matching DiffEqArgs in Python
-typedef struct {
-    int N;
-    double D;
-    double DELTA_T;
-    double DELTA_X;
-} DiffEqArgs;
-
 // Device pointers (module-level variables)
 double *d_C = nullptr, *d_C_new = nullptr, *d_block_sums = nullptr;
 double *h_block_sums = nullptr;
@@ -31,7 +25,6 @@ cudaStream_t stream;
 #define blockDimX 16
 #define blockDimY 16
 
-// CUDA kernel
 __global__ void diffusion_kernel(double *C, double *C_new, double *block_sums, int N, double D, double DELTA_T, double DELTA_X) {
     extern __shared__ double sdata[]; // Shared memory for diff_val
     
@@ -81,7 +74,6 @@ __global__ void diffusion_kernel(double *C, double *C_new, double *block_sums, i
 
 extern "C" {
 
-// Initialize device memory and copy data from host to device
 void cuda_init(double *h_C_flat, double *h_C_new_flat, DiffEqArgs *args) {
     int N = args->N;
     size_t size = N * N * sizeof(double);
@@ -96,8 +88,7 @@ void cuda_init(double *h_C_flat, double *h_C_new_flat, DiffEqArgs *args) {
 
 }
 
-// Perform a single time step
-double cuda_step(DiffEqArgs *args) {
+double cuda_diff_eq(DiffEqArgs *args) {
     int N = args->N;
     double D = args->D;
     double DELTA_T = args->DELTA_T;
@@ -132,13 +123,11 @@ double cuda_step(DiffEqArgs *args) {
     return difmedio;
 }
 
-// Copy data from device to host
 void cuda_get_result(double *h_C_flat, int N) {
     size_t size = N * N * sizeof(double);
     CUDA_CHECK(cudaMemcpy(h_C_flat, d_C, size, cudaMemcpyDeviceToHost));
 }
 
-// Free device memory
 void cuda_finalize() {
     if (d_C) {
         CUDA_CHECK(cudaFree(d_C));
@@ -164,7 +153,7 @@ void cuda_finalize() {
 
 } // extern "C"
 
-
+#ifndef BUILD_SHARED
 int main(int argc, char* argv[]) {
     // Check arguments
     if (argc != 6) {
@@ -191,7 +180,7 @@ int main(int argc, char* argv[]) {
 
     // Main loop
     for (int t = 0; t < T; t++) {
-        double difmedio = cuda_step(&args);
+        double difmedio = cuda_diff_eq(&args);
         if (t % 100 == 0)
             printf("Iteration %d - Difference = %g\n", t, difmedio);
     }
@@ -209,3 +198,4 @@ int main(int argc, char* argv[]) {
 
     return 0;
 }
+#endif

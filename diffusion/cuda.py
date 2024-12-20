@@ -48,7 +48,7 @@ class CUDADiffusionEquation(BaseDiffusionEquation):
         """
         Define the argument and return types for the CUDA-related C functions.
         """
-        required_functions = ['cuda_init', 'cuda_step', 'cuda_get_result', 'cuda_finalize']
+        required_functions = ['cuda_init', 'cuda_diff_eq', 'cuda_get_result', 'cuda_finalize']
         for func in required_functions:
             if not hasattr(self.lib, func):
                 raise AttributeError(f"The shared library does not have '{func}' function.")
@@ -60,8 +60,8 @@ class CUDADiffusionEquation(BaseDiffusionEquation):
         self.lib.cuda_init.restype = None
 
         # Define cuda_step
-        self.lib.cuda_step.argtypes = [POINTER(DiffEqArgs)]
-        self.lib.cuda_step.restype = c_double
+        self.lib.cuda_diff_eq.argtypes = [POINTER(DiffEqArgs)]
+        self.lib.cuda_diff_eq.restype = c_double
 
         # Define cuda_get_result
         self.lib.cuda_get_result.argtypes = [POINTER(c_double), c_int]
@@ -108,7 +108,7 @@ class CUDADiffusionEquation(BaseDiffusionEquation):
         if not self._cuda_initialized:
             self._cuda_init()
 
-        diff = self.lib.cuda_step(byref(self.args))
+        diff = self.lib.cuda_diff_eq(byref(self.args))
         # No need to swap in Python; swapping is handled in CUDA code
         return diff
 
