@@ -83,7 +83,7 @@ class BaseDiffusionEquation(ABC):
     def __enter__(self):
         return self
     
-    def __exit__(self):
+    def __exit__(self, exc_type, exc_value, traceback):
         # Don't do any cleanup here. The other classes will handle as needed.
         pass
     
