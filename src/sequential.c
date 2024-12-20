@@ -57,7 +57,7 @@ int main(int argc, char *argv[]) {
 
     // Show concentration at the center
     printf("Concentração final no centro: %f\n", C[N / 2][N / 2]);
-    salvar_matriz(C, N, N, "matriz_sequential.txt");
+    // salvar_matriz(C, N, N, "matriz_sequential.txt");
 
     // show_matrix(C);
     free_matrix(C, N);
