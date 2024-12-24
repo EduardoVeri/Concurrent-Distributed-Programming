@@ -2,17 +2,18 @@
 #include <cuda_runtime.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+#include "cuda_utils.h"
 #include "diff_eq.h"
 
-
-#define CUDA_CHECK(err) \
-    do { \
-        cudaError_t errr = (err); \
-        if (errr != cudaSuccess) { \
-            fprintf(stderr, "CUDA Error: %s (err_num=%d) at %s:%d\n", \
-            cudaGetErrorString(errr), errr, __FILE__, __LINE__); \
-            exit(errr); \
-        } \
+#define CUDA_CHECK(err)                                                  \
+    do {                                                                 \
+        cudaError_t errr = (err);                                        \
+        if (errr != cudaSuccess) {                                       \
+            fprintf(stderr, "CUDA Error: %s (err_num=%d) at %s:%d\n",    \
+                    cudaGetErrorString(errr), errr, __FILE__, __LINE__); \
+            exit(errr);                                                  \
+        }                                                                \
     } while (0)
 
 // Device pointers (module-level variables)
@@ -27,8 +28,8 @@ static int blockDimX = 16;
 static int blockDimY = 16;
 
 __global__ void diffusion_kernel(double *C, double *C_new, double *block_sums, int N, double D, double DELTA_T, double DELTA_X) {
-    extern __shared__ double sdata[]; // Shared memory for diff_val
-    
+    extern __shared__ double sdata[];  // Shared memory for diff_val
+
     int i = blockIdx.y * blockDim.y + threadIdx.y + 1;
     int j = blockIdx.x * blockDim.x + threadIdx.x + 1;
 
@@ -41,9 +42,9 @@ __global__ void diffusion_kernel(double *C, double *C_new, double *block_sums, i
         double left = C[i * N + (j - 1)];
         double right = C[i * N + (j + 1)];
         double center = C[idx];
-        
+
         C_new[idx] = center + D * DELTA_T * ((up + down + left + right - 4 * center) / (DELTA_X * DELTA_X));
-        
+
         diff_val = fabs(C_new[idx] - center);
     }
 
@@ -59,7 +60,7 @@ __global__ void diffusion_kernel(double *C, double *C_new, double *block_sums, i
     }
 
     if (tid < 32) {
-        volatile double* vsmem = sdata;
+        volatile double *vsmem = sdata;
         vsmem[tid] += vsmem[tid + 32];
         vsmem[tid] += vsmem[tid + 16];
         vsmem[tid] += vsmem[tid + 8];
@@ -76,7 +77,7 @@ __global__ void diffusion_kernel(double *C, double *C_new, double *block_sums, i
 extern "C" {
 
 void set_block_dimensions(int x, int y) {
-    cuda_finalize(); // Reset the device before changing the block dimensions
+    cuda_finalize();  // Reset the device before changing the block dimensions
     blockDimX = x;
     blockDimY = y;
 }
@@ -85,21 +86,20 @@ void cuda_init(double *h_C_flat, double *h_C_new_flat, DiffEqArgs *args) {
     int N = args->N;
     size_t size = N * N * sizeof(double);
     num_blocks = ((N - 2 + blockDimX - 1) / blockDimX) * ((N - 2 + blockDimY - 1) / blockDimY);
-    CUDA_CHECK(cudaMalloc((void**)&d_C, size));
-    CUDA_CHECK(cudaMalloc((void**)&d_C_new, size));
-    CUDA_CHECK(cudaMalloc((void**)&d_block_sums, num_blocks * sizeof(double)));
+    CUDA_CHECK(cudaMalloc((void **)&d_C, size));
+    CUDA_CHECK(cudaMalloc((void **)&d_C_new, size));
+    CUDA_CHECK(cudaMalloc((void **)&d_block_sums, num_blocks * sizeof(double)));
     CUDA_CHECK(cudaMemcpy(d_C, h_C_flat, size, cudaMemcpyHostToDevice));
     CUDA_CHECK(cudaMemcpy(d_C_new, h_C_new_flat, size, cudaMemcpyHostToDevice));
     CUDA_CHECK(cudaStreamCreate(&stream));
 
-    h_block_sums = (double*)malloc(num_blocks * sizeof(double));
+    h_block_sums = (double *)malloc(num_blocks * sizeof(double));
     if (h_block_sums == nullptr) {
         fprintf(stderr, "Error: Failed to allocate host memory\n");
         exit(1);
     }
 
     initialized = true;
-
 }
 
 double cuda_diff_eq(DiffEqArgs *args) {
@@ -115,7 +115,7 @@ double cuda_diff_eq(DiffEqArgs *args) {
     }
 
     // Define grid dimensions
-    dim3 blockDim(blockDimX, blockDimY); 
+    dim3 blockDim(blockDimX, blockDimY);
     dim3 gridDim((N + blockDim.x - 2) / blockDim.x, (N + blockDim.y - 2) / blockDim.y);
 
     size_t smem_size = blockDim.x * blockDim.y * sizeof(double);
@@ -133,7 +133,7 @@ double cuda_diff_eq(DiffEqArgs *args) {
     for (int i = 0; i < num_blocks; i++) {
         total_diff += h_block_sums[i];
     }
-    double difmedio = total_diff / ((N-2)*(N-2));
+    double difmedio = total_diff / ((N - 2) * (N - 2));
 
     // Swap device pointers
     double *temp = d_C;
@@ -169,14 +169,14 @@ void cuda_finalize() {
         CUDA_CHECK(cudaStreamDestroy(stream));
         stream = nullptr;
     }
-    cudaDeviceReset(); // Reset the device
+    cudaDeviceReset();  // Reset the device
     initialized = false;
 }
 
-} // extern "C"
+}  // extern "C"
 
 #ifndef BUILD_SHARED
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
     // Check arguments
     if (argc != 6) {
         printf("Usage: %s <N> <T> <D> <DELTA_T> <DELTA_X>\n", argv[0]);
@@ -191,10 +191,10 @@ int main(int argc, char* argv[]) {
     double DELTA_X = atof(argv[5]);
 
     size_t size = N * N * sizeof(double);
-    double *C_flat = (double*)malloc(size);
-    double *C_new_flat = (double*)malloc(size);
+    double *C_flat = (double *)malloc(size);
+    double *C_new_flat = (double *)malloc(size);
 
-    C_flat[N*N/2 + N/2] = 1.0;
+    C_flat[N * N / 2 + N / 2] = 1.0;
 
     // Initialize device data
     DiffEqArgs args = {N, D, DELTA_T, DELTA_X};
@@ -211,7 +211,7 @@ int main(int argc, char* argv[]) {
     cuda_get_result(C_flat, N);
 
     // Print final at center
-    printf("Final value: %g\n", C_flat[N*N/2 + N/2]);
+    printf("Final value: %g\n", C_flat[N * N / 2 + N / 2]);
 
     // Cleanup
     free(C_flat);
