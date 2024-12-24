@@ -16,15 +16,15 @@
     } while (0)
 
 // Device pointers (module-level variables)
-double *d_C = nullptr, *d_C_new = nullptr, *d_block_sums = nullptr;
-double *h_block_sums = nullptr;
-int num_blocks = 0;
-cudaStream_t stream;
-bool initialized = false;
+static double *d_C = nullptr, *d_C_new = nullptr, *d_block_sums = nullptr;
+static double *h_block_sums = nullptr;
+static int num_blocks = 0;
+static cudaStream_t stream;
+static bool initialized = false;
 
 // Define block and grid dimensions as global variables
-#define blockDimX 16
-#define blockDimY 16
+static int blockDimX = 16;
+static int blockDimY = 16;
 
 __global__ void diffusion_kernel(double *C, double *C_new, double *block_sums, int N, double D, double DELTA_T, double DELTA_X) {
     extern __shared__ double sdata[]; // Shared memory for diff_val
@@ -74,6 +74,12 @@ __global__ void diffusion_kernel(double *C, double *C_new, double *block_sums, i
 }
 
 extern "C" {
+
+void set_block_dimensions(int x, int y) {
+    cuda_finalize(); // Reset the device before changing the block dimensions
+    blockDimX = x;
+    blockDimY = y;
+}
 
 void cuda_init(double *h_C_flat, double *h_C_new_flat, DiffEqArgs *args) {
     int N = args->N;
