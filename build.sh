@@ -12,7 +12,9 @@ cd build
 
 # Build the shared library
 gcc ../src/*.c -I../inc -o libDiffusionEquation.so -fopenmp -shared -DBUILD_SHARED
+nvcc -Xcompiler -fPIC -shared -I../inc ../src/cuda.cu -o libCUDAdiffusionEquation.so -arch=sm_50
 
 # Build the executables
 gcc ../src/sequential.c ../src/utils.c -I../inc -o sequential
 gcc ../src/omp.c ../src/utils.c -I../inc -o omp -fopenmp
+nvcc ../src/cuda.cu ../src/utils.c -I../inc -o cuda -arch=sm_50

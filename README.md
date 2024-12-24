@@ -29,8 +29,6 @@ cmake --build build
 Otherwise, you can use the following shell script to build the project:
 ```bash
 ./build.sh
-
-nvcc -Xcompiler -fPIC -shared src/cuda_for_python.cu -o libcud.diffusion.so -arch=sm_50
 ```
 
 Obs: if you are using __Windows__, use the `gcc` commands inside the script to compile the project.
