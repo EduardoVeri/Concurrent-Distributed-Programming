@@ -23,7 +23,6 @@ class CUDADiffusionEquation(BaseDiffusionEquation):
             library_path, initial_concentration_points, N, D, DELTA_T, DELTA_X
         )
         self._cuda_initialized = False
-        self._define_c_functions()
         self._cuda_init()
 
     def __enter__(self):
