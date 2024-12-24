@@ -20,6 +20,7 @@ double *d_C = nullptr, *d_C_new = nullptr, *d_block_sums = nullptr;
 double *h_block_sums = nullptr;
 int num_blocks = 0;
 cudaStream_t stream;
+bool initialized = false;
 
 // Define block and grid dimensions as global variables
 #define blockDimX 16
@@ -81,10 +82,17 @@ void cuda_init(double *h_C_flat, double *h_C_new_flat, DiffEqArgs *args) {
     CUDA_CHECK(cudaMalloc((void**)&d_C, size));
     CUDA_CHECK(cudaMalloc((void**)&d_C_new, size));
     CUDA_CHECK(cudaMalloc((void**)&d_block_sums, num_blocks * sizeof(double)));
-    h_block_sums = (double*)malloc(num_blocks * sizeof(double));
     CUDA_CHECK(cudaMemcpy(d_C, h_C_flat, size, cudaMemcpyHostToDevice));
     CUDA_CHECK(cudaMemcpy(d_C_new, h_C_new_flat, size, cudaMemcpyHostToDevice));
     CUDA_CHECK(cudaStreamCreate(&stream));
+
+    h_block_sums = (double*)malloc(num_blocks * sizeof(double));
+    if (h_block_sums == nullptr) {
+        fprintf(stderr, "Error: Failed to allocate host memory\n");
+        exit(1);
+    }
+
+    initialized = true;
 
 }
 
@@ -93,6 +101,12 @@ double cuda_diff_eq(DiffEqArgs *args) {
     double D = args->D;
     double DELTA_T = args->DELTA_T;
     double DELTA_X = args->DELTA_X;
+
+    // Check if the device pointers are initialized
+    if (!initialized) {
+        fprintf(stderr, "Error: Device pointers are not initialized\n");
+        exit(1);
+    }
 
     // Define grid dimensions
     dim3 blockDim(blockDimX, blockDimY); 
@@ -149,6 +163,8 @@ void cuda_finalize() {
         CUDA_CHECK(cudaStreamDestroy(stream));
         stream = nullptr;
     }
+    cudaDeviceReset(); // Reset the device
+    initialized = false;
 }
 
 } // extern "C"
