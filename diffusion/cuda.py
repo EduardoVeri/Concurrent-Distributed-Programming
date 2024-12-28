@@ -53,6 +53,7 @@ class CUDADiffusionEquation(BaseDiffusionEquation):
             "cuda_get_result",
             "cuda_finalize",
             "get_number_of_threads",
+            "set_block_dimensions",
         ]
         for func in required_functions:
             if not hasattr(self.lib, func):
@@ -83,6 +84,10 @@ class CUDADiffusionEquation(BaseDiffusionEquation):
         # Define get_number_of_threads
         self.lib.get_number_of_threads.argtypes = []
         self.lib.get_number_of_threads.restype = c_int
+
+        # define set_block_dimensions
+        self.lib.set_block_dimensions.argtypes = [c_int, c_int]
+        self.lib.set_block_dimensions.restype = None
 
     def _cuda_init(self):
         """
@@ -141,8 +146,15 @@ class CUDADiffusionEquation(BaseDiffusionEquation):
             self.lib.cuda_finalize()
             self._cuda_initialized = False
 
+    @property
     def get_number_of_threads(self) -> int:
         """
         Get the number of threads used in the CUDA kernel.
         """
         return self.lib.get_number_of_threads()
+
+    def set_block_dimensions(self, block_size_x: int, block_size_y: int):
+        """
+        Set the block dimensions for the CUDA kernel.
+        """
+        self.lib.set_block_dimensions(block_size_x, block_size_y)
