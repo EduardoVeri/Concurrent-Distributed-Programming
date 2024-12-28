@@ -23,12 +23,12 @@ class CUDADiffusionEquation(BaseDiffusionEquation):
             library_path, initial_concentration_points, N, D, DELTA_T, DELTA_X
         )
         self._cuda_initialized = False
-        self._cuda_init()
 
     def __enter__(self):
         """
         Enter the runtime context related to this object.
         """
+        self._cuda_init()
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
@@ -97,8 +97,7 @@ class CUDADiffusionEquation(BaseDiffusionEquation):
         Override to reset device memory if concentration matrices are reset.
         """
         super().reset_concentration_matrix(N)
-        self._cuda_initialized = False
-        self._cuda_init()
+        self.finalize()
 
     def step(self) -> float:
         """
