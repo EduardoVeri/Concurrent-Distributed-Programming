@@ -19,10 +19,10 @@ class CUDADiffusionEquation(BaseDiffusionEquation):
         DELTA_T=0.01,
         DELTA_X=1.0,
     ):
+        self._cuda_initialized = False
         super().__init__(
             library_path, initial_concentration_points, N, D, DELTA_T, DELTA_X
         )
-        self._cuda_initialized = False
 
     def __enter__(self):
         """
@@ -153,7 +153,7 @@ class CUDADiffusionEquation(BaseDiffusionEquation):
         """
         return self.lib.get_number_of_threads()
 
-    def set_block_dimensions(self, block_size_x: int, block_size_y: int):
+    def set_block_dim(self, block_size_x: int, block_size_y: int):
         """
         Set the block dimensions for the CUDA kernel.
         """
