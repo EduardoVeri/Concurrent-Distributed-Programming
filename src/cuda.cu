@@ -82,6 +82,10 @@ void set_block_dimensions(int x, int y) {
     blockDimY = y;
 }
 
+int get_number_of_threads() {
+    return blockDimX * blockDimY * num_blocks;
+}
+
 void cuda_init(double *h_C_flat, double *h_C_new_flat, DiffEqArgs *args) {
     int N = args->N;
     size_t size = N * N * sizeof(double);

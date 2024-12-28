@@ -47,14 +47,24 @@ class CUDADiffusionEquation(BaseDiffusionEquation):
         """
         Define the argument and return types for the CUDA-related C functions.
         """
-        required_functions = ['cuda_init', 'cuda_diff_eq', 'cuda_get_result', 'cuda_finalize']
+        required_functions = [
+            "cuda_init",
+            "cuda_diff_eq",
+            "cuda_get_result",
+            "cuda_finalize",
+            "get_number_of_threads",
+        ]
         for func in required_functions:
             if not hasattr(self.lib, func):
-                raise AttributeError(f"The shared library does not have '{func}' function.")
+                raise AttributeError(
+                    f"The shared library does not have '{func}' function."
+                )
 
         # Define cuda_init
         self.lib.cuda_init.argtypes = [
-            POINTER(c_double), POINTER(c_double), POINTER(DiffEqArgs)
+            POINTER(c_double),
+            POINTER(c_double),
+            POINTER(DiffEqArgs),
         ]
         self.lib.cuda_init.restype = None
 
@@ -69,6 +79,10 @@ class CUDADiffusionEquation(BaseDiffusionEquation):
         # Define cuda_finalize
         self.lib.cuda_finalize.argtypes = []
         self.lib.cuda_finalize.restype = None
+
+        # Define get_number_of_threads
+        self.lib.get_number_of_threads.argtypes = []
+        self.lib.get_number_of_threads.restype = c_int
 
     def _cuda_init(self):
         """
@@ -126,3 +140,9 @@ class CUDADiffusionEquation(BaseDiffusionEquation):
         if self._cuda_initialized:
             self.lib.cuda_finalize()
             self._cuda_initialized = False
+
+    def get_number_of_threads(self) -> int:
+        """
+        Get the number of threads used in the CUDA kernel.
+        """
+        return self.lib.get_number_of_threads()
