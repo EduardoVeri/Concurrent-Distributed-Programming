@@ -158,3 +158,4 @@ class CUDADiffusionEquation(BaseDiffusionEquation):
         Set the block dimensions for the CUDA kernel.
         """
         self.lib.set_block_dimensions(block_size_x, block_size_y)
+        self._cuda_initialized = False # Reset the CUDA initialization flag
