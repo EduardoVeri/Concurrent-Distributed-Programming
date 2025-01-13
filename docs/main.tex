@@ -105,7 +105,7 @@ O fluxo de execução consiste nas seguintes etapas:
 \begin{itemize}
     \item \textbf{Inicialização (\texttt{cuda\_init}):} Aloca memória na GPU e transfere os dados iniciais da CPU para a GPU.
     \item \textbf{Execução do kernel (\texttt{cuda\_diff\_eq}):} O kernel é executado, atualizando os valores da matriz e calculando a diferença média entre as iterações.
-    \item \textbf{Recuperação de Dados (\texttt{cuda\_get\_result}:} Transfere os resultados da GPU de volta para a CPU.
+    \item \textbf{Recuperação de Dados (\texttt{cuda\_get\_result}):} Transfere os resultados da GPU de volta para a CPU.
     \item \textbf{Finalização (\texttt{cuda\_finalize}):} Libera a memória alocada na GPU.
 \end{itemize}
 
