@@ -94,61 +94,30 @@ da matriz. A atualização de cada célula depende da média das concentrações
 seus vizinhos imediatos e de parâmetros físicos como coeficiente de difusão, o
 intervalo de tempo $\Delta t$ e o espaçamento espacial $\Delta x$.
 
-\subsection{Código Paralelo}
+\subsection{Código Paralelo em CUDA}
 
-O código paralelo implementa uma versão desenvolvida em OpenMP do mesmo
-algorítimo sequencial, para distribuir o trabalho entre múltiplos núcleos do
-processador. Isso é alcançado utilizando-se das diretivas específicas da
-biblioteca na estrutura do código sequencial.
+O código paralelo em CUDA implementa uma versão otimizada do algorítimo de difusão, explorando a capacidade de paralelização massiva das GPUs. A CUDA (Compute Unified Device Architecture) permite distribuir o cálculo de atualização das células da matriz de concentração entre milhares de threads executadas simultaneamente. Cada thread é atribuída a uma célula específica da matriz, realizando cálculos independentes e simultâneos para atualizar os valores conforme o método de diferenças finitas.
+
+O kernel \texttt{diffusion\_kernel} é responsável por realizar o cálculo da nova concentração de cada célula com base nos valores dos seus vizinhos imediatos. Esse kernel é executado pór uma grade (grid) de blocos de threads, cujas dimensões são configuráveis para melhor aproveitamento dos recursos da GPU. A utilização de memória compartilhada (\texttt{\_\_shared\_\_}) permite acelerar a soma das diferenças das concentrações, essencial para verificar a convergência do algorítimo.
+
+O fluxo de execução consiste nas seguintes etapas:
 
 \begin{itemize}
-  \item \#pragma omp parallel for collapse(2): É a diretiva que divide
-        automaticamente os loops de cálculo entre múltiplos threads. Cada
-        thread é
-        responsável por atualizar uma parte distinta da matriz, permitindo que
-        várias
-        partes do cálculo sejam realizadas simultaneamente. O uso de
-        collapse(2) indica
-        que o compilador deve tratar múltiplas laços aninhados com um único
-        para fins
-        de paralelismo. No caso do código de difusão, os dois laços de
-        repetição
-        aninhados serão linearizados.
-  \item \#pragma omp parallel for reduction(+:difmedio) collapse(2): Essa
-        diretiva assim como a anterior executa as iterações do laço de
-        repetição de
-        maneira paralela, com o adicional de reduções, que garantem que a
-        operação de
-        somatório que monitora a convergência do algorítimo seja realizada de
-        maneira
-        segura entre as diferentes threads que acessam as variáveis dessa
-        operação.
-  \item omp\_set\_num\_threads(int num\_threads): Permite configurar
-        dinamicamente o número de threads a serem utilizados pelo código, sendo
-        extremamente útil para realizar as verificações de desempenho.
+    \item \textbf{Inicialização (\texttt{cuda\_init}):} Aloca memória na GPU e transfere os dados iniciais da CPU para a GPU.
+    \item \textbf{Execução do kernel (\texttt{cuda\_diff\_eq}):} O kernel é executado, atualizando os valores da matriz e calculando a diferença média entre as iterações.
+    \item \textbf{Recuperação de Dados (\texttt{cuda\_get\_result}:} Transfere os resultados da GPU de volta para a CPU.
+    \item \textbf{Finalização (\texttt{cuda\_finalize}):} Libera a memória alocada na GPU.
 \end{itemize}
+
+A configuração das dimensões dos blocos de threads pode ser ajustada através da função \texttt{set\_block\_dimensions}, permitindo experimentar diferentes granularidades de paralelismo. Esse ajuste é fundamental para otimizar o desempenho, equilibrando a carga de trabalho entre os multiprocessadores da GPU.
 
 \subsection{Interface Python e ferramenta CMake}
 
-O projeto utiliza o CMake como sistema de compilação, definindo processos e
-dependências (como a biblioteca OpenMP) por meio de um arquivo de configuração.
-Para evidenciar as diferenças de desempenho entre as implementações sequencial
-e paralela, desativamos otimizações do compilador usando flags específicas,
-pois otimizações como a vetorização automática no código sequencial reduziram
-inicialmente essa diferença. Assim, desabilitar essas otimizações permitiu uma
-execução mais direta, destacando as diferenças de desempenho entre as
-abordagens.
+Assim como na implementação em OpenMP, o projeto utiliza o CMake para a compilação do código CUDA, facilitando a definição de dependências e o processo de build. A integração com Python é realizada utilizando o módulo \texttt{ctypes}, que permite o carregamento dinâmico da biblioteca CUDA compilada e a chamada de suas funções diretamente em Python.
 
-Além disso, implementamos uma interface Python usando o módulo ctypes para
-carregar a biblioteca de difusão em C e mapear suas funções e, com isso,
-permite executar os códigos sequencial e paralelo de forma flexível,
-facilitando a integração com métodos de análise desenvolvidos em notebooks
-Jupyter, onde os resultados são visualizados. Criar essa interface segue a
-abordagem de outras grandes bibliotecas da linguagem, combinando a facilidade
-de uso de um ambiente de alto nível com a eficiência de soluções implementadas
-em linguagens como C. Um exemplo de biblioteca que utiliza esse método é o
-NumPy, que oferece operações matemáticas de alto desempenho por meio de códigos
-otimizados em C.
+A classe \texttt{CUDADiffusionEquation} implementa a interface Python para a solução da equação de difusão. Essa classe gerencia a inicialização da GPU, a execução dos kernels CUDA e a liberação de recursos, garantindo uma execução eficiente e segura. A interface permite configurar parâmetros como o tamanho da matriz, coeficiente de difusão e as dimensões dos blocos de threads.
+
+Com essa integração, é possível comparar diretamente o desempenho entre as implementações sequencial, OpenMP e CUDA, aproveitando a flexibilidade do Python para realizar análises e visualizações dos resultados.
 
 \section{Resultados}
 
