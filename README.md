@@ -36,9 +36,10 @@ Obs: if you are using __Windows__, use the `gcc` commands inside the script to c
 This will create a `build` directory and generate three files in it:
 - sequential (executable)
 - omp (executable)
+- cuda (executable)
 - libDiffusionEquation.so (shared library)
 
-The `sequential` executable is the sequential version of the diffusion equation solver, while the `omp` executable is the parallel version using OpenMP. The shared library `libDiffusionEquation.so` can be used to interface with the diffusion solver in Python.
+The `sequential` executable is the sequential version of the diffusion equation solver, while the `omp` and `cuda` executables are the parallel versions using OpenMP and CUDA, respectively. The shared library `libDiffusionEquation.so` can be used to interface with the diffusion solver in Python.
 
 The `NO_OPTIMIZATION` flag can be used to disable compiler optimizations. By default, the project is built with optimizations enabled. To disable optimizations, use `-DNO_OPTIMIZATION=ON`. **Note that the optimization process can vectorize the code so well that the parallelization does not provide any speedup**. In such cases, you can disable optimizations to see the effect of it.
 
@@ -55,12 +56,14 @@ The C executable provides a command-line interface for solving diffusion equatio
 ```bash
 ./build/sequential <N> <T> <D> <dt> <dx>
 ./build/omp <N> <T> <D> <dt> <dx> <omp>
+./build/cuda <N> <T> <D> <dt> <dx>
 ```
 
 Here is an example of how to run the C executable:
 ```bash
 time ./build/sequential 100 1000 0.1 0.01 1.0
 time ./build/omp 100 1000 0.1 0.01 1.0 4
+time ./build/cuda 100 1000 0.1 0.01 1.0
 ```
 
 ## Using the Python Module
@@ -81,34 +84,53 @@ The `-e` flag installs the module in editable mode, which means that any changes
 Here is an example of how to use the diffusion Python module to solve a 2D diffusion equation:
 
 ```python
-from diffusion import SequentialDiffusionEquation, OMPdiffusionEquation 
+from diffusion import (
+    SequentialDiffusionEquation,
+    OMPdiffusionEquation,
+    CUDADiffusionEquation,
+)
 
 lib_path = "./build/libDiffusionEquation.so"
 
-# Initialize the sequential solver
-seq_solver = SequentialDiffusionEquation(
-    library_path=lib_path, N=200, D=0.05, DELTA_T=0.02, DELTA_X=1.0
-)
+# Context manager is not necessary for sequential and OMP
+# solver, but it is recommended to use it even for them
+with SequentialDiffusionEquation(
+    library_path=lib_path, N=200, D=0.05, DELTA_T=0.02, DELTA_X=1.0,
+    initial_concentration_points={(100, 100): 1.0},
+) as seq_solver:
 
-# Set the initial concentration at the center
-seq_solver.set_initial_concentration({(100, 100): 1.0})
+    for _ in range(1000): # Perform 1000 simulation steps
+        diff_seq = seq_solver.step()  # Execute the C code step
+    
+    value_at_center = seq_solver.concentration_matrix[100][100]
+    print(f"Sequential diffusion value at center: {value_at_center}")
 
-diff_seq = seq_solver.step()  # Perform a simulation step
-print(f"Sequential diffusion value: {diff_seq}")
 
-# Initialize the OpenMP solver
-omp_solver = OMPdiffusionEquation(
-    library_path=lib_path, N=200, D=0.05, DELTA_T=0.02, DELTA_X=1.0
-)
+with OMPdiffusionEquation(
+    library_path=lib_path, N=200, D=0.05, DELTA_T=0.02, DELTA_X=1.0,
+    initial_concentration_points={(100, 100): 1.0},
+) as omp_solver:
 
-seq_solver.set_initial_concentration({(100, 100): 1.0})
+    for _ in range(1000):
+        diff_omp = omp_solver.step()  # Execute the OpenMP step
+    
+    value_at_center = omp_solver.concentration_matrix[100][100]
+    print(f"OMP diffusion value at center: {value_at_center}")
 
-# Set the number of threads for OpenMP
-omp_solver.set_num_threads(8)
 
-diff_omp = omp_solver.step()
-print(f"OpenMP diffusion value: {diff_omp}")
+# Context manager is necessary for CUDA solver
+# You also can free them manually by calling the finalize method
+with CUDADiffusionEquation(
+    library_path=lib_path, N=200, D=0.05, DELTA_T=0.02, DELTA_X=1.0,
+    initial_concentration_points={(100, 100): 1.0},
+) as cuda_solver:
+    cuda_solver.set_initial_concentration({(100, 100): 1.0})
 
-# Access the current concentration matrix
-print(omp_solver.concentration_matrix[100][100])
+    for _ in range(1000):
+        diff_cuda = cuda_solver.step()  # Execute the cuda step
+    
+    cuda_solver.get_result() # Get the result from the device to the host
+    value_at_center = cuda_solver.concentration_matrix[100][100]
+    print(f"CUDA diffusion value at center: {value_at_center}")
+
 ```
