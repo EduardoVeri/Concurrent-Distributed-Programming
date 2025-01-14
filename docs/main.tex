@@ -202,9 +202,9 @@ problema foram incluídas na Tabela~\ref{tab:especificacaoSimulacao}.
     \hline
     Especificações             & Detalhes                    \\ [0.5ex]
     \hline\hline
-    Dimensão da Matriz (N x N) & 2000 x 2000                 \\
+    Dimensão da Matriz (N x N) & 3000 x 3000                 \\
     \hline
-    Número de Iterações        & 500                         \\
+    Número de Iterações        & 1000                        \\
     \hline
     Distribuição Inicial       & Alta concentração no centro \\
     \hline
@@ -222,68 +222,49 @@ Para obter valores mais consistentes e minimizar influências externas, como
 outros programas em execução, cada teste foi executado quinze vezes e, assim,
 calculamos o tempo médio gasto e seu desvio padrão. O \textit{speedup} é
 calculado dividindo-se o tempo de execução sequencial pelo tempo de execução
-paralelo correspondente, enquanto a eficiência é determinada ao dividir o
-\textit{speedup} pelo número de \textit{threads} utilizados.
+CUDA correspondente.
 
 \begin{table}[ht]
   \centering
   \caption{Tabela de comparação de desempenho entre o código sequencial e o
-    paralelo utilizando OpenMP.}
+    utilizando CUDA.}
   \vspace{0.3cm}
-  \begin{tabular}{||c c c c||}
+  \begin{tabular}{||c c c c c||}
     \hline
-    Nº Threads & Tempo            & Speedup & Eficiência \\ [0.5ex]
+    Experimento &  N°Threads          & Tempo & STD & SpeedUp \\ [0.5ex]
     \hline\hline
-    1          & 26.22 $\pm$ 2.09 & 1.0     & 100\%      \\
+    Sequencial         & 1.0 & 124.10    & 3.86 & 1.0     \\
     \hline
-    2          & 14.59 $\pm$ 1.49 & 1.80    & 89,88\%    \\
+    CUDA(16, 16)          & 9078169.0  & 23.32  & 0.52  & 5.32   \\
     \hline
-    4          & 10.60 $\pm$ 1.43 & 2.47    & 61.82\%    \\
-    \hline
-    8          & 8.52 $\pm$ 1.32  & 3.08    & 38.48\%    \\
-    \hline
-    16         & 8.29 $\pm$ 1.29  & 3.16    & 19.77\%    \\
-    \hline
-    32         & 8.67 $\pm$ 1.43  & 3.03    & 9.45\%     \\
+    CUDA(32, 32)          & 9174841.0  & 25.05   & 0.49 & 5.32  \\
     \hline
   \end{tabular}
 \end{table}
 
-\begin{figure}[ht]
+O desempenho inferior do CUDA com block dim (32, 32) em relação ao (16, 16) ocorre porque blocos maiores podem causar um maior uso de recursos, como memória compartilhada e registradores, levando à saturação da capacidade da GPU. Isso resulta em maior latência devido à competição entre blocos por recursos limitados.
+
+\begin{figure}[H]
   \centering
-  \includegraphics[width=.45\textwidth]{figs/speedupxthreads.png}
-  \caption{Gráfico do \textit{speedup} por número de \textit{threads}}
-  \label{fig:speedupOMP}
+  \includegraphics[width=.40\textwidth]{figs/times_boxplot_cuda.png}
+  \caption{Boxplot de comparação do tempo de execução entre Blocos CUDA(16,16) e (32,32)}
+  \label{fig:boxplot_cuda}
 \end{figure}
 
-\begin{figure}[ht]
+\begin{figure}[H]
   \centering
-  \includegraphics[width=.45\textwidth]{figs/eficienciaxthreads.png}
-  \caption{Gráfico da eficiência por número de \textit{threads}}
-  \label{fig:eficienciaOMP}
+  \includegraphics[width=.35\textwidth]{figs/times_boxplot_sequential.png}
+  \caption{Boxplot do tempo de execução da implementação sequencial} 
+  \label{fig:boxplot_sequential}
 \end{figure}
 
-O gráfico de \textit{speedup} (Figura~\ref{fig:speedupOMP}) mostra uma
-tendência de estabilização em torno do valor três, enquanto o \textit{speedup}
-linear ideal apresenta valores significativamente maiores, o que pode sugerir
-que a escalabilidade da aplicação é limitada, possivelmente devido a
-\textit{overheads} de sincronização ou ao fato de que o problema não é
-suficientemente grande para aproveitar eficientemente um número maior de
-\textit{threads}. Além disso, o desempenho pode estar sendo afetado pela
-latência de memória ou pela arquitetura do processador utilizado e,
-consequentemente, não há grandes vantagens em utilizar um número elevado de
-\textit{threads} para resolver este problema específico.
+As duas figuras apresentam análises do tempo de execução em diferentes cenários de processamento. A (Figura~\ref{fig:boxplot_sequential}) mostra o tempo de execução sequencial, com a mediana próxima de 124 segundos e uma leve dispersão dos valores, apresentando um outlier acima de 136 segundos, indicando um caso pontual de maior duração. A (Figura~\ref{fig:boxplot_cuda}) compara o tempo de execução utilizando CUDA com configurações de blocos (16, 16) e (32, 32). A configuração (16, 16) apresenta tempos mais rápidos e menos dispersos, com valores concentrados entre 23,0 e 24,0 segundos, enquanto a configuração (32, 32) tem maior dispersão, com tempos médios superiores, concentrados entre 24,5 e 25,5 segundos e dois outliers acima de 26 segundos. Esses resultados indicam que a configuração de blocos menor é mais eficiente, apresentando maior estabilidade no tempo de execução.
 
 \section{Conclusão}
-Por meio de implementações sequenciais e paralelas utilizando OpenMP, foi
-validada a correção dos resultados e analisou-se o impacto do paralelismo no
-tempo de execução. Os resultados obtidos mostraram que, embora o paralelismo
-traga ganhos significativos em relação ao código sequencial, há limitações na
-escalabilidade, possivelmente devido a fatores como \textit{overheads} de
-sincronização e restrições arquiteturais do hardware utilizado. Assim, este
-trabalho reforça os conceitos fundamentais aprendidos em programação
-concorrente e distribuída, evidenciando as vantagens práticas da paralelização
-em termos de desempenho e eficiência em simulações numéricas.
+Os resultados mostraram que o uso de CUDA oferece ganhos significativos em relação à execução sequencial, com a configuração (16, 16) apresentando maior eficiência e estabilidade. No entanto, blocos maiores, como (32, 32), mostraram limitações devido ao maior uso de recursos e latência na GPU.
+
+A análise reforça a importância de ajustar parâmetros como o tamanho dos blocos para maximizar a eficiência do paralelismo e demonstra o potencial do CUDA em aplicações científicas que demandam alto desempenho computacional.
+
 
 \bibliographystyle{sbc}
 \bibliography{sbc-template}
