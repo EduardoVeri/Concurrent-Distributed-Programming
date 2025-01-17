@@ -107,23 +107,23 @@ O kernel \texttt{diffusion\_kernel} é responsável por realizar o cálculo da
 nova concentração de cada célula com base nos valores dos seus vizinhos
 imediatos. Esse kernel é executado por uma grade (\textit{grid}) de blocos de
 threads, cujas dimensões são configuráveis para melhor aproveitamento dos
-recursos da GPU. A utilização de memória compartilhada
+recursos da GPU\@. A utilização de memória compartilhada
 (\texttt{\_\_shared\_\_}) permite acelerar a soma das diferenças das
 concentrações, essencial para verificar a convergência do algoritmo.
 
 O fluxo de execução consiste nas seguintes etapas:
 
 \begin{itemize}
-  \item \textbf{Inicialização (\texttt{cuda\_init}):} Aloca memória na GPU e transfere os dados iniciais da CPU para a GPU.
+  \item \textbf{Inicialização (\texttt{cuda\_init}):} Aloca memória na GPU e transfere os dados iniciais da CPU para a GPU\@.
   \item \textbf{Execução do kernel (\texttt{cuda\_diff\_eq}):} O kernel é executado, atualizando os valores da matriz e calculando a diferença média entre as iterações.
-  \item \textbf{Recuperação de Dados (\texttt{cuda\_get\_result}):} Transfere os resultados da GPU de volta para a CPU.
-  \item \textbf{Finalização (\texttt{cuda\_finalize}):} Libera a memória alocada na GPU.
+  \item \textbf{Recuperação de Dados (\texttt{cuda\_get\_result}):} Transfere os resultados da GPU de volta para a CPU\@.
+  \item \textbf{Finalização (\texttt{cuda\_finalize}):} Libera a memória alocada na GPU\@.
 \end{itemize}
 
 A configuração das dimensões dos blocos de threads pode ser ajustada através da
 função \texttt{set\_block\_dimensions}, permitindo experimentar diferentes
 granularidades de paralelismo e desempenho, equilibrando a carga de trabalho
-entre os multiprocessadores da GPU.
+entre os multiprocessadores da GPU\@.
 
 \subsection{Interface Python e ferramenta CMake}
 
@@ -150,7 +150,7 @@ paralelo, considerando possíveis erros que podem surgir na paralelização, com
 condições de corrida ou inconsistências de sincronização. Em seguida,
 ilustramos, por meio de mapas de calor, a atualização dos valores da matriz ao
 longo do tempo. Por fim, realizamos uma análise comparativa dos tempos médios
-de execução, \textit{speedup} e eficiência entre as duas versões.
+de execução e \textit{speedup} entre as duas versões.
 
 \subsection{Validação da Implementação - Numérico}
 
@@ -225,7 +225,7 @@ Tabela~\ref{tab:especificacaoSimulacao}.
     \hline
     Especificações             & Detalhes                    \\ [0.5ex]
     \hline\hline
-    Dimensão da Matriz (N x N) & 3000 x 3000                 \\
+    Dimensão da Matriz (N $\times$ N) & 3000 $\times$ 3000                 \\
     \hline
     Número de Iterações        & 1000                        \\
     \hline
@@ -259,9 +259,9 @@ CUDA correspondente.
     \hline
     OMP (4 Threads) & 62.89 $\pm$ 2.38  & 1.97    \\
     \hline
-    CUDA(16, 16)    & 23.32 $\pm$ 0.52  & 5.32    \\
+    CUDA (16, 16)    & 23.32 $\pm$ 0.52  & 5.32    \\
     \hline
-    CUDA(32, 32)    & 25.05 $\pm$ 0.49  & 4.95    \\
+    CUDA (32, 32)    & 25.05 $\pm$ 0.49  & 4.95    \\
     \hline
   \end{tabular}
 \end{table}
@@ -299,12 +299,12 @@ pode ser para tarefas que demandam cálculos extremos, como os de aprendizado de
 máquina, por exemplo. Porém, importante ressaltar que esse ganho será menor se
 o tamanho da simulação for reduzido, já que todo o processo de alocar, enviar e
 receber dados e administrar a GPU possui um custo, que pode ser evitado ao
-utilizar apenas as threads da própria CPU.
+utilizar apenas as threads da própria CPU\@.
 
 O desempenho inferior do CUDA com \textit{block dim} (32, 32) em relação ao
 (16, 16) ocorre porque blocos maiores podem causar um maior uso de recursos,
 como memória compartilhada e registradores, levando à saturação da capacidade
-da GPU. Isso resulta em maior latência devido à competição entre blocos por
+da GPU\@. Isso resulta em maior latência devido à competição entre blocos por
 recursos limitados.
 
 \section{Conclusão}
