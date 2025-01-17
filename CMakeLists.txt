@@ -2,22 +2,20 @@
 cmake_minimum_required(VERSION 3.10)
 project(Diffusion-Equation)
 
-# ----------------------------
-# Add Option to Disable Optimizations
-# ----------------------------
+# Set the C standard
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD_REQUIRED True)
+
+# Option to disable compiler optimizations
 option(NO_OPTIMIZATION "Disable compiler optimizations" OFF)
 
 if (NO_OPTIMIZATION)
-    message(STATUS "Compiler optimizations are disabled.")
+message(STATUS "Compiler optimizations are disabled.")
     # Remove existing optimization flags and set to -O0
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O0")
     set(CMAKE_C_FLAGS_RELEASE "") # Optionally clear release flags
     set(CMAKE_C_FLAGS_RELWITHDEBINFO "") # Clear RelWithDebInfo flags if necessary
 endif()
-
-# Set the C standard
-set(CMAKE_C_STANDARD 99)
-set(CMAKE_C_STANDARD_REQUIRED True)
 
 # Specify the include directories
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
@@ -43,11 +41,29 @@ target_include_directories(utils PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/inc)
 # Shared Library
 # ----------------------------
 
-# Define the source files for the shared library
 set(LIB_SOURCES
     src/sequential.c
     src/omp.c
 )
+
+find_package(CUDAToolkit) # Find CUDA
+
+if (CUDAToolkit_FOUND)
+    enable_language(CUDA)
+    message(STATUS "CUDA found. Enabling CUDA support.")
+    
+    # Set the CUDA architectures
+    set(CMAKE_CUDA_ARCHITECTURES 50 60 70 75)
+
+    # Add CUDA source files
+    list(APPEND LIB_SOURCES src/cuda.cu)
+
+else()
+    message(STATUS "CUDA not found. Disabling CUDA support.")
+endif()
+
+
+# Define the source files for the shared library
 
 # Create the shared library
 add_library(DiffusionEquation SHARED ${LIB_SOURCES})
@@ -75,3 +91,8 @@ endfunction()
 # Create executables for each source file
 create_executable(sequential src/sequential.c)
 create_executable(omp src/omp.c)
+
+# Create CUDA executable if CUDA is found
+if (CUDAToolkit_FOUND)
+    create_executable(cuda src/cuda.cu)
+endif()
