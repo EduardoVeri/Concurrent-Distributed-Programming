@@ -249,28 +249,32 @@ CUDA correspondente.
   \caption{Tabela de comparação de desempenho entre o código sequencial e o
     utilizando CUDA.}\label{tab:Resultados}
   \vspace{0.3cm}
-  \begin{tabular}{||c c c c||}
+  \begin{tabular}{||c c c||}
     \hline
-    Experimento     & N°Threads & Tempo             & SpeedUp \\ [0.5ex]
+    Experimento      & Tempo             & SpeedUp \\ [0.5ex]
     \hline\hline
-    Sequencial      & 1.0       & 124.10 $\pm$ 3.86 & 1.0     \\
+    Sequencial      & 124.10 $\pm$ 3.86 & 1.0     \\
     \hline
-    OMP (4 Threads) & -         & - $\pm$ -         & -       \\
+    OMP (4 Threads)  & 62.89 $\pm$ 2.38         & 1.97     \\
     \hline
-    CUDA(16, 16)    & 9078169.0 & 23.32 $\pm$ 0.52  & 5.32    \\
+    CUDA(16, 16)     & 23.32 $\pm$ 0.52  & 5.32    \\
     \hline
-    CUDA(32, 32)    & 9174841.0 & 25.05 $\pm$ 0.49  & 4.95    \\
+    CUDA(32, 32)    & 25.05 $\pm$ 0.49  & 4.95    \\
     \hline
   \end{tabular}
 \end{table}
 
 \begin{figure}[ht]
   \centering
-  \begin{minipage}[b]{0.45\textwidth}
+  \begin{minipage}[b]{0.37\textwidth}
     \centering
     \includegraphics[width=\textwidth]{figs/times_boxplot_cuda.png}
   \end{minipage}
-  \begin{minipage}[b]{0.3\textwidth}
+  \begin{minipage}[b]{0.25\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figs/times_boxplot_omp.png}
+  \end{minipage}
+  \begin{minipage}[b]{0.25\textwidth}
     \centering
     \includegraphics[width=\textwidth]{figs/times_boxplot_sequential.png}
   \end{minipage}
