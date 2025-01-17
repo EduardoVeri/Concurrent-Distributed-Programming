@@ -46,17 +46,14 @@ set(LIB_SOURCES
     src/omp.c
 )
 
-
-option(CUDA_ARCH "Specify the GPU architecture" 50)
-
 find_package(CUDAToolkit) # Find CUDA
 
 if (CUDAToolkit_FOUND)
     enable_language(CUDA)
     message(STATUS "CUDA found. Enabling CUDA support.")
-    # Set Arch for CUDA
-    message(STATUS "CUDA_ARCH: ${CUDA_ARCH}")
-    set(CMAKE_CUDA_ARCHITECTURES ${CUDA_ARCH})
+    
+    # Set the CUDA architectures
+    set(CMAKE_CUDA_ARCHITECTURES 50 60 70 75)
 
     # Add CUDA source files
     list(APPEND LIB_SOURCES src/cuda.cu)
