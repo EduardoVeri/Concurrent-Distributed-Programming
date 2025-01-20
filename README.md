@@ -124,7 +124,6 @@ with CUDADiffusionEquation(
     library_path=lib_path, N=200, D=0.05, DELTA_T=0.02, DELTA_X=1.0,
     initial_concentration_points={(100, 100): 1.0},
 ) as cuda_solver:
-    cuda_solver.set_initial_concentration({(100, 100): 1.0})
 
     for _ in range(1000):
         diff_cuda = cuda_solver.step()  # Execute the cuda step
