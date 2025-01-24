@@ -65,6 +65,22 @@ void salvar_matriz(double **matriz, int linhas, int colunas, const char *nome_ar
     printf("Matriz salva no arquivo: %s\n", nome_arquivo);
 }
 
+double **create_submatrix(int rows, int cols) {
+    double **mat = (double **)malloc(rows * sizeof(double *));
+    mat[0] = (double *)malloc(rows * cols * sizeof(double));
+    for (int i = 1; i < rows; i++) {
+        mat[i] = mat[0] + i * cols;
+    }
+    return mat;
+}
+
+void free_submatrix(double **mat, int rows) {
+    if (!mat) return;
+    free(mat[0]);  // free the contiguous block
+    free(mat);     // free the array of pointers
+}
+
+
 #ifdef __cplusplus
 }
 #endif
