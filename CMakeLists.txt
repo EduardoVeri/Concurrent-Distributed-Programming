@@ -63,6 +63,16 @@ else()
 endif()
 
 
+find_package(MPI) # Find MPI
+
+if (MPI_C_FOUND)
+    message(STATUS "MPI found. Enabling MPI support.")
+    include_directories(${MPI_C_INCLUDE_PATH})
+    list(APPEND LIB_SOURCES src/mpi.c)
+else()
+    message(STATUS "MPI not found. Disabling MPI support.")
+endif()
+
 # Define the source files for the shared library
 
 # Create the shared library
@@ -95,4 +105,10 @@ create_executable(omp src/omp.c)
 # Create CUDA executable if CUDA is found
 if (CUDAToolkit_FOUND)
     create_executable(cuda src/cuda.cu)
+endif()
+
+# Create MPI executable if MPI is found
+if (MPI_C_FOUND)
+    create_executable(mpi src/mpi.c)
+    target_link_libraries(mpi PRIVATE ${MPI_C_LIBRARIES})
 endif()
