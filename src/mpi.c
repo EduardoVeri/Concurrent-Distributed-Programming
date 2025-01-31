@@ -1,9 +1,5 @@
-#include <math.h>
 #include <mpi.h>
 #include <omp.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/time.h>
 
 #include "diff_eq.h"  // Where you have your struct DiffEqArgs, etc.
 #include "utils.h"    // Where you have create_matrix, free_matrix, etc.

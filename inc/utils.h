@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <sys/time.h>
 
 double **create_matrix(int N);
 double **create_matrix_and_init(int N);

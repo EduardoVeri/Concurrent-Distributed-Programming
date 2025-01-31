@@ -1,10 +1,9 @@
 // cuda.cu
 #include <cuda_runtime.h>
-#include <stdio.h>
-#include <stdlib.h>
 
 #include "cuda_utils.h"
 #include "diff_eq.h"
+#include "utils.h"
 
 #define CUDA_CHECK(err)                                                  \
     do {                                                                 \
