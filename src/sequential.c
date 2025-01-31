@@ -36,7 +36,6 @@ int main(int argc, char *argv[]) {
     struct timeval start_parallel, end_parallel;
 
     for (int i = 0; i < I; i++){
-        gettimeofday(&start_parallel, NULL);
         
         // Create matrix
         double **C = create_matrix_and_init(N);
@@ -48,6 +47,7 @@ int main(int argc, char *argv[]) {
         // Create struct with arguments
         DiffEqArgs args = {N, D, DELTA_T, DELTA_X};
 
+        gettimeofday(&start_parallel, NULL);
 
         // Call the function T times
         for (int t = 0; t < T; t++) {
@@ -71,11 +71,10 @@ int main(int argc, char *argv[]) {
         printf("%f\n", (double)(end_parallel.tv_sec - start_parallel.tv_sec) + (double)(end_parallel.tv_usec - start_parallel.tv_usec) / 1000000);
 #endif
 
-        // Show concentration at the center
 #ifdef VERBOSE
+        // Show concentration at the center
         printf("Concentração final no centro: %f\n", C[N / 2][N / 2]);
 #endif
-        // salvar_matriz(C, N, N, "matriz_sequential.txt");
 
         // show_matrix(C);
         free_matrix(C, N);

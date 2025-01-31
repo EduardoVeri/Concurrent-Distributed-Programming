@@ -23,67 +23,72 @@ double omp_diff_eq(double **C, double **C_new, DiffEqArgs *args) {
 
 #ifndef BUILD_SHARED
 int main(int argc, char *argv[]) {
-    struct timeval start, end, start_parallel, end_parallel;
-    gettimeofday(&start, NULL);
+    struct timeval start_parallel, end_parallel;
 
     // Check arguments
-    if (argc != 7) {
-        printf("Usage: %s <N> <T> <D> <DELTA_T> <DELTA_X> <NUM_THREADS>\n", argv[0]);
+    if (argc != 8) {
+        printf("Usage: %s <I> <N> <T> <D> <DELTA_T> <DELTA_X> <NUM_THREADS>\n", argv[0]);
         return 1;
     }
 
-    int N = atoi(argv[1]);
-    int T = atoi(argv[2]);
-    double D = atof(argv[3]);
-    double DELTA_T = atof(argv[4]);
-    double DELTA_X = atof(argv[5]);
-    int NUM_THREADS = atoi(argv[6]);
+    int I = atoi(argv[1]);
+    int N = atoi(argv[2]);
+    int T = atoi(argv[3]);
+    double D = atof(argv[4]);
+    double DELTA_T = atof(argv[5]);
+    double DELTA_X = atof(argv[6]);
+    int NUM_THREADS = atoi(argv[7]);
 
     // Set number of threads
     omp_set_num_threads(NUM_THREADS);
 
-    // Create matrix
-    double **C = create_matrix_and_init(N);
-    double **C_new = create_matrix(N);
+    for (int i = 0; i < I; i++) {
 
-    // Initial condition
-    C[N / 2][N / 2] = 1.0;
+        // Create matrix
+        double **C = create_matrix_and_init(N);
+        double **C_new = create_matrix(N);
 
-    // Create struct with arguments
-    DiffEqArgs args = {N, D, DELTA_T, DELTA_X};
+        // Initial condition
+        C[N / 2][N / 2] = 1.0;
 
-    // Call the function T times
-    gettimeofday(&start_parallel, NULL);
-    for (int t = 0; t < T; t++) {
-        double difmedio = omp_diff_eq(C, C_new, &args);
+        // Create struct with arguments
+        DiffEqArgs args = {N, D, DELTA_T, DELTA_X};
 
-        // Swap pointers
-        double **temp = C;
-        C = C_new;
-        C_new = temp;
+        gettimeofday(&start_parallel, NULL);
 
-        if ((t % 100) == 0)
-            printf("interacao %d - diferenca = %g\n", t, difmedio);
+        // Call the function T times
+        for (int t = 0; t < T; t++) {
+            double difmedio = omp_diff_eq(C, C_new, &args);
+
+            // Swap pointers
+            double **temp = C;
+            C = C_new;
+            C_new = temp;
+
+#ifdef VERBOSE
+            if ((t % 100) == 0)
+                printf("interacao %d - diferenca = %g\n", t, difmedio);
+#endif
+        }
+
+        gettimeofday(&end_parallel, NULL);
+
+#ifdef EVALUATE
+        // print in seconds
+        printf("%f\n", (double)(end_parallel.tv_sec - start_parallel.tv_sec) + (double)(end_parallel.tv_usec - start_parallel.tv_usec) / 1000000);
+#endif
+        // Show concentration at the center
+#ifdef VERBOSE
+        printf("Concentração final no centro: %f\n", C[N / 2][N / 2]);
+#endif
+
+        // salvar_matriz(C, N, N, "matriz_omp.txt");
+
+        // show_matrix(C);
+        free_matrix(C, N);
+        free_matrix(C_new, N);
+
     }
-    gettimeofday(&end_parallel, NULL);
-
-    // Show concentration at the center
-    printf("Concentração final no centro: %f\n", C[N / 2][N / 2]);
-
-    // salvar_matriz(C, N, N, "matriz_omp.txt");
-
-    // show_matrix(C);
-    free_matrix(C, N);
-    free_matrix(C_new, N);
-
-    gettimeofday(&end, NULL);
-    double total_time = ((end.tv_sec * 1000000 + end.tv_usec) - (start.tv_sec * 1000000 + start.tv_usec)) / 1000;
-    double parallel_time = ((end_parallel.tv_sec * 1000000 + end_parallel.tv_usec) - (start_parallel.tv_sec * 1000000 + start_parallel.tv_usec)) / 1000;
-    double sequential_time = total_time - parallel_time;
-
-    printf("Tempo total: %lf ms\n", total_time);
-    printf("Tempo paralelo: %lf ms\n", parallel_time);
-    printf("Tempo sequencial: %lf ms\n", sequential_time);
 
     return 0;
 }
