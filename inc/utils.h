@@ -6,6 +6,10 @@
 #include <math.h>
 #include <sys/time.h>
 
+#ifdef __cplusplus
+extern "C"{
+#endif
+
 double **create_matrix(int N);
 double **create_matrix_and_init(int N);
 void free_matrix(double **matrix, int N);
@@ -15,5 +19,9 @@ double *create_flatten_matrix_and_init(int N);
 void free_flatten_matrix(double *matrix);
 double **create_submatrix(int rows, int cols);
 void free_submatrix(double **mat, int rows);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
