@@ -11,10 +11,18 @@ if [ ! -f "build.sh" ]; then
     exit 1
 fi
 
-while getopts "v" opt; do
+# Parse the command line arguments
+while getopts "ve" opt; do
     case ${opt} in
         v )
+            echo -e "${YELLOW}Building in verbose mode${RESET}"
             VERBOSE=1
+            define_flag="-DVERBOSE"
+            ;;
+        e )
+            echo -e "${YELLOW}Building in evaluating mode${RESET}"
+            EVALUATE=1
+            define_flag="-DEVALUATE"
             ;;
         \? )
             echo "Usage: build.sh [-v]"
@@ -23,11 +31,6 @@ while getopts "v" opt; do
     esac
 done
 
-if [ "$VERBOSE" = "1" ]; then
-    define_flag="-DVERBOSE=1"
-fi
-
-echo $define_flag
 
 NVCC=$(which nvcc)
 if [ -z "$NVCC" ]; then
