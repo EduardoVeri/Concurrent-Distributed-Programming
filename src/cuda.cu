@@ -181,46 +181,49 @@ void cuda_finalize() {
 #ifndef BUILD_SHARED
 int main(int argc, char *argv[]) {
     // Check arguments
-    if (argc != 6) {
-        printf("Usage: %s <N> <T> <D> <DELTA_T> <DELTA_X>\n", argv[0]);
+    if (argc != 7) {
+        printf("Usage: %s <I> <N> <T> <D> <DELTA_T> <DELTA_X>\n", argv[0]);
         return 1;
     }
 
     struct timeval start_parallel, end_parallel;
 
     // Parse arguments
-    int N = atoi(argv[1]);
-    int T = atof(argv[2]);
-    double D = atof(argv[3]);
-    double DELTA_T = atof(argv[4]);
-    double DELTA_X = atof(argv[5]);
+    int I = atoi(argv[1]);
+    int N = atoi(argv[2]);
+    int T = atof(argv[3]);
+    double D = atof(argv[4]);
+    double DELTA_T = atof(argv[5]);
+    double DELTA_X = atof(argv[6]);
 
-    size_t size = N * N * sizeof(double);
-    double *C_flat = (double *)malloc(size);
-    double *C_new_flat = (double *)malloc(size);
 
-    C_flat[N * N / 2 + N / 2] = 1.0;
+    for (int i = 0; i < I; i++) {
+        size_t size = N * N * sizeof(double);
+        double *C_flat = (double *)malloc(size);
+        double *C_new_flat = (double *)malloc(size);
 
-    // Initialize device data
-    DiffEqArgs args = {N, D, DELTA_T, DELTA_X};
-    cuda_init(C_flat, C_new_flat, &args);
+        C_flat[N * N / 2 + N / 2] = 1.0;
 
-    gettimeofday(&start_parallel, NULL);
+        // Initialize device data
+        DiffEqArgs args = {N, D, DELTA_T, DELTA_X};
+        cuda_init(C_flat, C_new_flat, &args);
 
-    // Main loop
-    for (int t = 0; t < T; t++) {
-        double difmedio = cuda_diff_eq(&args);
+        gettimeofday(&start_parallel, NULL);
+
+        // Main loop
+        for (int t = 0; t < T; t++) {
+            double difmedio = cuda_diff_eq(&args);
 
 #ifdef VERBOSE
         if (t % 100 == 0)
             printf("Iteration %d - Difference = %g\n", t, difmedio);
 #endif
-    }
+        }
 
-    gettimeofday(&end_parallel, NULL);
+        gettimeofday(&end_parallel, NULL);
 
-    // Copy final data back to host
-    cuda_get_result(C_flat, N);
+        // Copy final data back to host
+        cuda_get_result(C_flat, N);
 
 #ifdef VERBOSE
     // Print final at center
@@ -230,14 +233,14 @@ int main(int argc, char *argv[]) {
 
 #ifdef EVALUATE
     // Print execution time
-    printf("Execution time: %g s\n", get_elapsed_time(start_parallel, end_parallel));
+    printf("%g\n", get_elapsed_time(start_parallel, end_parallel));
 #endif
 
-    // Cleanup
-    free(C_flat);
-    free(C_new_flat);
-    cuda_finalize();
-
+        // Cleanup
+        free(C_flat);
+        free(C_new_flat);
+        cuda_finalize();
+    }
     return 0;
 }
 #endif
