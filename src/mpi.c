@@ -148,9 +148,7 @@ int main(int argc, char *argv[]) {
 
 #ifdef EVALUATE
         if (rank == 0) {
-            printf("%lf\n", (double)(end_parallel.tv_sec - start_parallel.tv_sec) 
-                + (double)(end_parallel.tv_usec - start_parallel.tv_usec) 
-                / 1000000);
+            printf("%lf\n", get_elapsed_time(start_parallel, end_parallel));
         }
 #endif
     }

@@ -1,5 +1,4 @@
-#include <stdlib.h>
-#include <stdio.h>
+#include "utils.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -80,6 +79,9 @@ void free_submatrix(double **mat, int rows) {
     free(mat);     // free the array of pointers
 }
 
+double get_elapsed_time(struct timeval start, struct timeval end) {
+    return (double)(end.tv_sec - start.tv_sec) + (double)(end.tv_usec - start.tv_usec) / 1000000;
+}
 
 #ifdef __cplusplus
 }

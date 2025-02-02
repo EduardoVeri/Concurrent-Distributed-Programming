@@ -35,8 +35,7 @@ int main(int argc, char *argv[]) {
 
     struct timeval start_parallel, end_parallel;
 
-    for (int i = 0; i < I; i++){
-        
+    for (int i = 0; i < I; i++) {
         // Create matrix
         double **C = create_matrix_and_init(N);
         double **C_new = create_matrix(N);
@@ -68,7 +67,7 @@ int main(int argc, char *argv[]) {
 
 #ifdef EVALUATE
         // Show time in seconds
-        printf("%f\n", (double)(end_parallel.tv_sec - start_parallel.tv_sec) + (double)(end_parallel.tv_usec - start_parallel.tv_usec) / 1000000);
+        printf("%f\n", get_elapsed_time(start_parallel, end_parallel));
 #endif
 
 #ifdef VERBOSE

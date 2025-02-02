@@ -186,6 +186,8 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+    struct timeval start_parallel, end_parallel;
+
     // Parse arguments
     int N = atoi(argv[1]);
     int T = atof(argv[2]);
@@ -203,18 +205,33 @@ int main(int argc, char *argv[]) {
     DiffEqArgs args = {N, D, DELTA_T, DELTA_X};
     cuda_init(C_flat, C_new_flat, &args);
 
+    gettimeofday(&start_parallel, NULL);
+
     // Main loop
     for (int t = 0; t < T; t++) {
         double difmedio = cuda_diff_eq(&args);
+
+#ifdef VERBOSE
         if (t % 100 == 0)
             printf("Iteration %d - Difference = %g\n", t, difmedio);
+#endif
     }
+
+    gettimeofday(&end_parallel, NULL);
 
     // Copy final data back to host
     cuda_get_result(C_flat, N);
 
+#ifdef VERBOSE
     // Print final at center
     printf("Final value: %g\n", C_flat[N * N / 2 + N / 2]);
+#endif
+
+
+#ifdef EVALUATE
+    // Print execution time
+    printf("Execution time: %g s\n", get_elapsed_time(start_parallel, end_parallel));
+#endif
 
     // Cleanup
     free(C_flat);

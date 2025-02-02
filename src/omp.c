@@ -75,7 +75,7 @@ int main(int argc, char *argv[]) {
 
 #ifdef EVALUATE
         // print in seconds
-        printf("%f\n", (double)(end_parallel.tv_sec - start_parallel.tv_sec) + (double)(end_parallel.tv_usec - start_parallel.tv_usec) / 1000000);
+        printf("%f\n", get_elapsed_time(start_parallel, end_parallel));
 #endif
         // Show concentration at the center
 #ifdef VERBOSE
