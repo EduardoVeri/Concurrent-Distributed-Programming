@@ -4,7 +4,6 @@
 #include "diff_eq.h"
 #include "utils.h"
 
-
 double mpi_omp_diff_eq(double **C, double **C_new, DiffEqArgs *args,
                        int localN, int N, int rank, int size) {
     double D = args->D;
@@ -27,7 +26,6 @@ double mpi_omp_diff_eq(double **C, double **C_new, DiffEqArgs *args,
 
     MPI_Waitall(req_count, reqs, MPI_STATUSES_IGNORE);
 
-
     double local_sum = 0.0;
 #pragma omp parallel for collapse(2) reduction(+ : local_sum)
     for (int i = 1; i <= localN; i++) {
@@ -44,18 +42,16 @@ double mpi_omp_diff_eq(double **C, double **C_new, DiffEqArgs *args,
     double global_sum = 0.0;
     MPI_Allreduce(&local_sum, &global_sum, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
-
     double difmedio_global = global_sum / ((N - 2) * (N - 2));
 
     return difmedio_global;
 }
 
-
 #ifndef BUILD_SHARED
 int main(int argc, char *argv[]) {
     struct timeval start_parallel, end_parallel;
 
-    int required = MPI_THREAD_FUNNELED;  
+    int required = MPI_THREAD_FUNNELED;
     int provided;
     MPI_Init_thread(&argc, &argv, required, &provided);
     if (provided < required) {
@@ -68,7 +64,7 @@ int main(int argc, char *argv[]) {
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
     // Check arguments
-    if (argc != 7) {
+    if (argc != 8) {
         if (rank == 0) {
             printf("Usage: mpirun -np <num_procs> %s <I> <N> <T> <D> <DELTA_T> <DELTA_X> <NUM_THREADS>\n",
                    argv[0]);
@@ -145,18 +141,12 @@ int main(int argc, char *argv[]) {
     }
 #endif
 
-
-    free_submatrix(C, localN + 2); 
+    free_submatrix(C, localN + 2);
     free_submatrix(C_new, localN + 2);
-
-    double parallel_time =
-        ((end_parallel.tv_sec * 1000000 + end_parallel.tv_usec) -
-         (start_parallel.tv_sec * 1000000 + start_parallel.tv_usec)) /
-        1000.0;
 
 #ifdef EVALUATE
     if (rank == 0) {
-        printf("Tempo paralelo:  %lf ms\n", parallel_time);
+        printf("%lf\n", (double)(end_parallel.tv_sec - start_parallel.tv_sec) + (double)(end_parallel.tv_usec - start_parallel.tv_usec) / 1000000);
     }
 #endif
 
