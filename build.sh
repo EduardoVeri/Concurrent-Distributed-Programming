@@ -50,26 +50,51 @@ cd build
 
 # Build the shared library
 gcc $(ls ../src/*.c | grep -v 'mpi.c') -I../inc -o libDiffusionEquation.so -fopenmp -shared -DBUILD_SHARED $define_flag
-echo -e "${GREEN}Successfully built libDiffusionEquation.so${NC}"
+if [ $? -eq 0 ]; then
+    echo -e "${GREEN}Successfully built libDiffusionEquation.so${RESET}"
+else
+    echo -e "${RED}ERROR: Failed to build libDiffusionEquation.so${RESET}"
+fi
 echo -e "${YELLOW}WARNING: The shared library does not support the MPI version yet.${RESET}"
 
 if [ ! -z "$NVCC" ]; then
     nvcc -Xcompiler -fPIC -shared -I../inc ../src/cuda.cu -o libCUDAdiffusionEquation.so -arch=sm_50 $define_flag
-    echo -e "${GREEN}Successfully built libCUDAdiffusionEquation.so${RESET}"
+    if [ $? -eq 0 ]; then
+         echo -e "${GREEN}Successfully built libCUDAdiffusionEquation.so${RESET}"
+    else
+        echo -e "${RED}ERROR: Failed to build libCUDAdiffusionEquation.so${RESET}"
+    fi
 fi
 
 # Build the executables
 gcc ../src/sequential.c ../src/utils.c -I../inc -o sequential $define_flag
-echo -e "${GREEN}Successfully built sequential${RESET}"
+if [ $? -eq 0 ]; then
+    echo -e "${GREEN}Successfully built sequential${RESET}"
+else
+    echo -e "${RED}ERROR: Failed to build sequential${RESET}"
+fi
+
 gcc ../src/omp.c ../src/utils.c -I../inc -o omp -fopenmp $define_flag
-echo -e "${GREEN}Successfully built omp${RESET}"
+if [ $? -eq 0 ]; then
+    echo -e "${GREEN}Successfully built omp${RESET}"
+else
+    echo -e "${RED}ERROR: Failed to build omp${RESET}"
+fi
 
 if [ ! -z "$NVCC" ]; then
     nvcc ../src/cuda.cu ../src/utils.c -I../inc -o cuda -arch=sm_50 $define_flag
-    echo -e "${GREEN}Successfully built cuda${RESET}"
+    if [ $? -eq 0 ]; then
+         echo -e "${GREEN}Successfully built cuda${RESET}"
+    else
+        echo -e "${RED}ERROR: Failed to build cuda${RESET}"
+    fi
 fi
 
 if [ ! -z "$MPI" ]; then
     mpicc ../src/mpi.c ../src/utils.c -I../inc -o mpi -fopenmp $define_flag
-    echo -e "${GREEN}Successfully built mpi${RESET}"
+    if [ $? -eq 0 ]; then
+         echo -e "${GREEN}Successfully built mpi${RESET}"
+    else
+        echo -e "${RED}ERROR: Failed to build mpi${RESET}"
+    fi
 fi
