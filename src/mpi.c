@@ -84,71 +84,76 @@ int main(int argc, char *argv[]) {
     // Set number of threads
     omp_set_num_threads(num_threads);
 
-    int localN = N / size;
+    for (int i = 0; i < I; i++) {
 
-    // Create the local matrices of size (localN+2) x N:
-    //   +2 to store top and bottom halos.
-    double **C = create_submatrix(localN + 2, N);
-    double **C_new = create_submatrix(localN + 2, N);
+        int localN = N / size;
 
-    // Initialize everything to 0.0
-    for (int i = 0; i < localN + 2; i++) {
-        for (int j = 0; j < N; j++) {
-            C[i][j] = 0.0;
-            C_new[i][j] = 0.0;
+        // Create the local matrices of size (localN+2) x N:
+        //   +2 to store top and bottom halos.
+        double **C = create_submatrix(localN + 2, N);
+        double **C_new = create_submatrix(localN + 2, N);
+
+        // Initialize everything to 0.0
+        for (int i = 0; i < localN + 2; i++) {
+            for (int j = 0; j < N; j++) {
+                C[i][j] = 0.0;
+                C_new[i][j] = 0.0;
+            }
         }
-    }
 
-    int global_start = rank * localN;
-    int global_end = global_start + localN - 1;
+        int global_start = rank * localN;
+        int global_end = global_start + localN - 1;
 
-    int mid_row = N / 2;
-    int mid_col = N / 2;
-    if (mid_row >= global_start && mid_row <= global_end) {
-        int local_i = mid_row - global_start + 1;  // +1 because of halo offset
-        C[local_i][mid_col] = 1.0;
-    }
+        int mid_row = N / 2;
+        int mid_col = N / 2;
+        if (mid_row >= global_start && mid_row <= global_end) {
+            int local_i = mid_row - global_start + 1;  // +1 because of halo offset
+            C[local_i][mid_col] = 1.0;
+        }
 
-    DiffEqArgs args;
-    args.N = N;
-    args.D = D;
-    args.DELTA_T = DELTA_T;
-    args.DELTA_X = DELTA_X;
+        DiffEqArgs args;
+        args.N = N;
+        args.D = D;
+        args.DELTA_T = DELTA_T;
+        args.DELTA_X = DELTA_X;
 
-    // Time-step loop
-    gettimeofday(&start_parallel, NULL);
-    for (int t = 0; t < T; t++) {
-        double difmedio = mpi_omp_diff_eq(C, C_new, &args, localN, N, rank, size);
+        // Time-step loop
+        gettimeofday(&start_parallel, NULL);
+        for (int t = 0; t < T; t++) {
+            double difmedio = mpi_omp_diff_eq(C, C_new, &args, localN, N, rank, size);
 
-        double **temp = C;
-        C = C_new;
-        C_new = temp;
+            double **temp = C;
+            C = C_new;
+            C_new = temp;
 
 #ifdef VERBOSE
-        if ((t % 100) == 0 && rank == 0) {
-            printf("Iteração %d - diferença média global = %g\n", t, difmedio);
-        }
+            if ((t % 100) == 0 && rank == 0) {
+                printf("Iteração %d - diferença média global = %g\n", t, difmedio);
+            }
 #endif
-    }
+        }
 
-    gettimeofday(&end_parallel, NULL);
+        gettimeofday(&end_parallel, NULL);
 
 #ifdef VERBOSE
-    // Print the final concentration at the center from the rank that owns it
-    if (mid_row >= global_start && mid_row <= global_end) {
-        int local_i = mid_row - global_start + 1;
-        printf("Rank %d => Concentração final no centro: %f\n", rank, C[local_i][mid_col]);
-    }
+        // Print the final concentration at the center from the rank that owns it
+        if (mid_row >= global_start && mid_row <= global_end) {
+            int local_i = mid_row - global_start + 1;
+            printf("Rank %d => Concentração final no centro: %f\n", rank, C[local_i][mid_col]);
+        }
 #endif
 
-    free_submatrix(C, localN + 2);
-    free_submatrix(C_new, localN + 2);
+        free_submatrix(C, localN + 2);
+        free_submatrix(C_new, localN + 2);
 
 #ifdef EVALUATE
-    if (rank == 0) {
-        printf("%lf\n", (double)(end_parallel.tv_sec - start_parallel.tv_sec) + (double)(end_parallel.tv_usec - start_parallel.tv_usec) / 1000000);
-    }
+        if (rank == 0) {
+            printf("%lf\n", (double)(end_parallel.tv_sec - start_parallel.tv_sec) 
+                + (double)(end_parallel.tv_usec - start_parallel.tv_usec) 
+                / 1000000);
+        }
 #endif
+    }
 
     MPI_Finalize();
     return 0;
