@@ -1,30 +1,10 @@
 #include <mpi.h>
 #include <omp.h>
 
-#include "diff_eq.h"  // Where you have your struct DiffEqArgs, etc.
-#include "utils.h"    // Where you have create_matrix, free_matrix, etc.
+#include "diff_eq.h"
+#include "utils.h"
 
-//-----------------------------------------------------------------------
-// Hybrid MPI+OpenMP implementation of the diffusion step.
-//
-// We assume a 1D decomposition in the 'i' (row) dimension.
-//
-// Global domain: 0 .. N-1 in the 'i' dimension (rows), 0 .. N-1 in 'j' dimension (cols).
-// Each rank handles a local chunk of the rows: [start_i, end_i-1], inclusive.
-//
-// We'll store (localN + 2) x N for each rank, to include
-//  + 1 halo row at the top    (index 0)
-//  + localN rows for real data (index 1 .. localN)
-//  + 1 halo row at the bottom (index localN+1)
-//
-// Then interior is [1..localN] in 'i', [0..N-1] in 'j'.
-//
-// Communication occurs for the top/bottom halo with neighbors.
-//
-// `C_new[i][j] = ...` is done for i in [1..localN], j in [1..N-1].
-//
-// Finally, we do an MPI_Allreduce to compute the global difmedio.
-//
+
 double mpi_omp_diff_eq(double **C, double **C_new, DiffEqArgs *args,
                        int localN, int N, int rank, int size) {
     double D = args->D;
@@ -32,28 +12,22 @@ double mpi_omp_diff_eq(double **C, double **C_new, DiffEqArgs *args,
     double DELTA_X = args->DELTA_X;
     double difmedio_local = 0.0;
 
-    // 1) Exchange boundary rows (halo) with neighbors
-    //    top neighbor:   rank-1 (if rank > 0)
-    //    bottom neighbor: rank+1 (if rank < size-1)
     MPI_Request reqs[4];
     int req_count = 0;
 
-    // Send my top row (row=1) to rank-1, receive into row=0
     if (rank > 0) {
         MPI_Irecv(C[0], N, MPI_DOUBLE, rank - 1, 0, MPI_COMM_WORLD, &reqs[req_count++]);
         MPI_Isend(C[1], N, MPI_DOUBLE, rank - 1, 1, MPI_COMM_WORLD, &reqs[req_count++]);
     }
-    // Send my bottom row (row=localN) to rank+1, receive into row=localN+1
+
     if (rank < size - 1) {
         MPI_Irecv(C[localN + 1], N, MPI_DOUBLE, rank + 1, 1, MPI_COMM_WORLD, &reqs[req_count++]);
         MPI_Isend(C[localN], N, MPI_DOUBLE, rank + 1, 0, MPI_COMM_WORLD, &reqs[req_count++]);
     }
 
-    // Wait for boundary exchange to complete
     MPI_Waitall(req_count, reqs, MPI_STATUSES_IGNORE);
 
-    // 2) Perform the diffusion step locally, using OpenMP for parallelization
-    //    Skip the halo layers -> i in [1..localN], j in [1..N-1]
+
     double local_sum = 0.0;
 #pragma omp parallel for collapse(2) reduction(+ : local_sum)
     for (int i = 1; i <= localN; i++) {
@@ -67,31 +41,21 @@ double mpi_omp_diff_eq(double **C, double **C_new, DiffEqArgs *args,
         }
     }
 
-    // 3) Compute global average difference (difmedio)
-    //    We have local_sum of differences in our subdomain -> reduce to a global sum
     double global_sum = 0.0;
     MPI_Allreduce(&local_sum, &global_sum, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
-    // The total number of "active" interior cells in the entire domain is (N-2)*(N-2).
-    // (assuming we're ignoring boundary i=0, i=N-1, j=0, j=N-1).
+
     double difmedio_global = global_sum / ((N - 2) * (N - 2));
 
     return difmedio_global;
 }
 
-//-----------------------------------------------------------------------
-// Main function (hybrid MPI+OpenMP driver).
-// mpirun -np <num_procs> ./mpi_omp_diff_eq <N> <T> <D> <DELTA_T> <DELTA_X> <NUM_THREADS>
-//
-// Example run:
-//   mpirun -np 4 ./mpi_omp_diff_eq 1000 1000 0.1 0.1 0.1 4
-//
-// Make sure N is divisible by the number of processes for simple 1D decomposition.
+
 #ifndef BUILD_SHARED
 int main(int argc, char *argv[]) {
     struct timeval start_parallel, end_parallel;
 
-    int required = MPI_THREAD_FUNNELED;  // Or MPI_THREAD_SERIALIZED if you need a bit more flexibility
+    int required = MPI_THREAD_FUNNELED;  
     int provided;
     MPI_Init_thread(&argc, &argv, required, &provided);
     if (provided < required) {
@@ -124,13 +88,11 @@ int main(int argc, char *argv[]) {
     // Set number of threads
     omp_set_num_threads(num_threads);
 
-    // For simplicity, assume N is divisible by size (number of processes).
-    // localN is the number of "real" rows each process will handle (excluding halo).
     int localN = N / size;
 
     // Create the local matrices of size (localN+2) x N:
     //   +2 to store top and bottom halos.
-    double **C = create_submatrix(localN + 2, N);  // You need to implement or adapt your create_matrix
+    double **C = create_submatrix(localN + 2, N);
     double **C_new = create_submatrix(localN + 2, N);
 
     // Initialize everything to 0.0
@@ -141,9 +103,6 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    // Set initial condition in the global center (N/2, N/2) if it belongs to this rank.
-    // Global center row = mid_row = N/2
-    // Our local chunk covers rows [rank*localN .. (rank+1)*localN - 1] in global indexing.
     int global_start = rank * localN;
     int global_end = global_start + localN - 1;
 
@@ -154,7 +113,6 @@ int main(int argc, char *argv[]) {
         C[local_i][mid_col] = 1.0;
     }
 
-    // Create struct with arguments
     DiffEqArgs args;
     args.N = N;
     args.D = D;
@@ -166,13 +124,11 @@ int main(int argc, char *argv[]) {
     for (int t = 0; t < T; t++) {
         double difmedio = mpi_omp_diff_eq(C, C_new, &args, localN, N, rank, size);
 
-        // Swap C and C_new
         double **temp = C;
         C = C_new;
         C_new = temp;
 
 #ifdef VERBOSE
-        // Print from rank=0 every 100 iterations
         if ((t % 100) == 0 && rank == 0) {
             printf("Iteração %d - diferença média global = %g\n", t, difmedio);
         }
@@ -189,10 +145,8 @@ int main(int argc, char *argv[]) {
     }
 #endif
 
-    // Optionally gather results or do further analysis here
-    // e.g. you could gather the entire matrix with MPI_Gather if needed.
 
-    free_submatrix(C, localN + 2);  // You need to implement or adapt your free_matrix
+    free_submatrix(C, localN + 2); 
     free_submatrix(C_new, localN + 2);
 
     double parallel_time =
