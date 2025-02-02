@@ -91,8 +91,13 @@ double mpi_omp_diff_eq(double **C, double **C_new, DiffEqArgs *args,
 int main(int argc, char *argv[]) {
     struct timeval start_parallel, end_parallel;
 
-    // Initialize MPI
-    MPI_Init(&argc, &argv);
+    int required = MPI_THREAD_FUNNELED;  // Or MPI_THREAD_SERIALIZED if you need a bit more flexibility
+    int provided;
+    MPI_Init_thread(&argc, &argv, required, &provided);
+    if (provided < required) {
+        fprintf(stderr, "Error: The MPI library does not provide the required threading level\n");
+        MPI_Abort(MPI_COMM_WORLD, 1);
+    }
 
     int rank, size;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -101,7 +106,7 @@ int main(int argc, char *argv[]) {
     // Check arguments
     if (argc != 7) {
         if (rank == 0) {
-            printf("Usage: mpirun -np <num_procs> %s <N> <T> <D> <DELTA_T> <DELTA_X> <NUM_THREADS>\n",
+            printf("Usage: mpirun -np <num_procs> %s <I> <N> <T> <D> <DELTA_T> <DELTA_X> <NUM_THREADS>\n",
                    argv[0]);
         }
         MPI_Finalize();
@@ -114,6 +119,10 @@ int main(int argc, char *argv[]) {
     double D = atof(argv[4]);
     double DELTA_T = atof(argv[5]);
     double DELTA_X = atof(argv[6]);
+    int num_threads = atoi(argv[7]);
+
+    // Set number of threads
+    omp_set_num_threads(num_threads);
 
     // For simplicity, assume N is divisible by size (number of processes).
     // localN is the number of "real" rows each process will handle (excluding halo).
@@ -167,8 +176,8 @@ int main(int argc, char *argv[]) {
         if ((t % 100) == 0 && rank == 0) {
             printf("Iteração %d - diferença média global = %g\n", t, difmedio);
         }
-    }
 #endif
+    }
 
     gettimeofday(&end_parallel, NULL);
 
