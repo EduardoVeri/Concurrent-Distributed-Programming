@@ -89,8 +89,7 @@ double mpi_omp_diff_eq(double **C, double **C_new, DiffEqArgs *args,
 // Make sure N is divisible by the number of processes for simple 1D decomposition.
 #ifndef BUILD_SHARED
 int main(int argc, char *argv[]) {
-    struct timeval start, end, start_parallel, end_parallel;
-    gettimeofday(&start, NULL);
+    struct timeval start_parallel, end_parallel;
 
     // Initialize MPI
     MPI_Init(&argc, &argv);
@@ -109,15 +108,12 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    int N = atoi(argv[1]);
-    int T = atoi(argv[2]);
-    double D = atof(argv[3]);
-    double DELTA_T = atof(argv[4]);
-    double DELTA_X = atof(argv[5]);
-    int NUM_THREADS = atoi(argv[6]);
-
-    // Set number of threads for OpenMP
-    omp_set_num_threads(NUM_THREADS);
+    int I = atoi(argv[1]);
+    int N = atoi(argv[2]);
+    int T = atoi(argv[3]);
+    double D = atof(argv[4]);
+    double DELTA_T = atof(argv[5]);
+    double DELTA_X = atof(argv[6]);
 
     // For simplicity, assume N is divisible by size (number of processes).
     // localN is the number of "real" rows each process will handle (excluding halo).
@@ -166,18 +162,23 @@ int main(int argc, char *argv[]) {
         C = C_new;
         C_new = temp;
 
+#ifdef VERBOSE
         // Print from rank=0 every 100 iterations
         if ((t % 100) == 0 && rank == 0) {
             printf("Iteração %d - diferença média global = %g\n", t, difmedio);
         }
     }
+#endif
+
     gettimeofday(&end_parallel, NULL);
 
+#ifdef VERBOSE
     // Print the final concentration at the center from the rank that owns it
     if (mid_row >= global_start && mid_row <= global_end) {
         int local_i = mid_row - global_start + 1;
         printf("Rank %d => Concentração final no centro: %f\n", rank, C[local_i][mid_col]);
     }
+#endif
 
     // Optionally gather results or do further analysis here
     // e.g. you could gather the entire matrix with MPI_Gather if needed.
@@ -185,23 +186,16 @@ int main(int argc, char *argv[]) {
     free_submatrix(C, localN + 2);  // You need to implement or adapt your free_matrix
     free_submatrix(C_new, localN + 2);
 
-    // Timing
-    gettimeofday(&end, NULL);
-    double total_time =
-        ((end.tv_sec * 1000000 + end.tv_usec) -
-         (start.tv_sec * 1000000 + start.tv_usec)) /
-        1000.0;
     double parallel_time =
         ((end_parallel.tv_sec * 1000000 + end_parallel.tv_usec) -
          (start_parallel.tv_sec * 1000000 + start_parallel.tv_usec)) /
         1000.0;
-    double sequential_time = total_time - parallel_time;
 
+#ifdef EVALUATE
     if (rank == 0) {
-        printf("Tempo total:     %lf ms\n", total_time);
         printf("Tempo paralelo:  %lf ms\n", parallel_time);
-        printf("Tempo sequencial:%lf ms\n", sequential_time);
     }
+#endif
 
     MPI_Finalize();
     return 0;
