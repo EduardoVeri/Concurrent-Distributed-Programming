@@ -12,7 +12,7 @@ if [ ! -f "build.sh" ]; then
 fi
 
 # Parse the command line arguments
-while getopts "ve" opt; do
+while getopts "veh" opt; do
     case ${opt} in
         v )
             echo -e "${YELLOW}Building in verbose mode${RESET}"
@@ -24,8 +24,16 @@ while getopts "ve" opt; do
             EVALUATE=1
             define_flag="-DEVALUATE"
             ;;
+        h )
+            echo "Usage: build.sh [-v] [-e] [-h]"
+            echo "Options:"
+            echo "  -v    Build in verbose mode"
+            echo "  -e    Build in evaluating mode"
+            echo "  -h    Show this help message"
+            exit 0
+            ;;
         \? )
-            echo "Usage: build.sh [-v]"
+            echo "Usage: build.sh [-v] [-e] [-h]"
             exit 1
             ;;
     esac
