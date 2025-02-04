@@ -10,7 +10,6 @@ if [ -f "run_simulations.sh" ]; then
 fi
 
 cd build
-rm -r results
 mkdir -p results
 cd results
 
