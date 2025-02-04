@@ -28,8 +28,11 @@ cmake --build build
 
 Otherwise, you can use the following shell script to build the project:
 ```bash
-./build.sh
+./build.sh [-h] [-e] [-v]
 ```
+- `-h`: Show help message
+- `-e`: Evaluation mode (print only the final time)
+- `-v`: Verbose mode (show print messages)
 
 Obs: if you are using __Windows__, use the `gcc` commands inside the script to compile the project.
 
