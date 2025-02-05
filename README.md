@@ -40,34 +40,54 @@ This will create a `build` directory and generate three files in it:
 - sequential (executable)
 - omp (executable)
 - cuda (executable)
+- mpi (executable)
 - libDiffusionEquation.so (shared library)
 
-The `sequential` executable is the sequential version of the diffusion equation solver, while the `omp` and `cuda` executables are the parallel versions using OpenMP and CUDA, respectively. The shared library `libDiffusionEquation.so` can be used to interface with the diffusion solver in Python.
+The `sequential` executable is the sequential version of the diffusion equation solver, while the `omp`, `cuda` and `mpi` executables are the parallel versions using OpenMP, Compute Unified Device Architecture (CUDA) and Message Passing Interface (MPI), respectively. The shared library `libDiffusionEquation.so` can be used to interface with the diffusion solver in Python.
 
 The `NO_OPTIMIZATION` flag can be used to disable compiler optimizations. By default, the project is built with optimizations enabled. To disable optimizations, use `-DNO_OPTIMIZATION=ON`. **Note that the optimization process can vectorize the code so well that the parallelization does not provide any speedup**. In such cases, you can disable optimizations to see the effect of it.
 
 ## Using the C executable
 The C executable provides a command-line interface for solving diffusion equations. The executable takes the following command-line arguments:
 
+- `NEval`: How many times the simulation will be executed
 - `N`: Grid size
 - `T`: Total iterations
 - `D`: Diffusion coefficient
 - `dt`: Time step
 - `dx`: Spatial step
 - `omp`: Number of OpenMP threads
+- `np`: Number of MPI processes
 
 ```bash
-./build/sequential <N> <T> <D> <dt> <dx>
-./build/omp <N> <T> <D> <dt> <dx> <omp>
-./build/cuda <N> <T> <D> <dt> <dx>
+./build/sequential <NEval> <N> <T> <D> <dt> <dx>
+./build/omp <NEval> <N> <T> <D> <dt> <dx> <omp>
+./build/cuda <NEval> <N> <T> <D> <dt> <dx>
+mpirun -np <np> --oversubscribe ./build/mpi <NEval> <N> <T> <D> <dt> <dx> <omp>
 ```
 
 Here is an example of how to run the C executable:
 ```bash
-time ./build/sequential 100 1000 0.1 0.01 1.0
-time ./build/omp 100 1000 0.1 0.01 1.0 4
-time ./build/cuda 100 1000 0.1 0.01 1.0
+time ./build/sequential 15 100 1000 0.1 0.01 1.0
+time ./build/omp 15 100 1000 0.1 0.01 1.0 4
+time ./build/cuda 15 100 1000 0.1 0.01 1.0
+time mpirun -np 2 --oversubscribe ./build/mpi 15 100 1000 0.1 0.01 1.0 2
 ```
+
+## Evaluation
+
+To execute an evaluation of the parallel versions, you can use the `scripts/run_simulations.sh` script. This script will run the parallel versions with the same parameters and save the execution time in a .txt file inside the `build/results` directory. Don't forget to compile the program using the evaluation mode before running the script.
+
+```bash
+./build.sh -e
+./scripts/run_simulations.sh
+```
+
+### Evaluation with Python
+
+In the `notebooks` directory, you can find a Jupyter notebook that evaluates the performance of the parallel versions using the Python module. The notebook uses the `time` module to measure the execution time of the simulations and the `matplotlib` library to plot the results. It also compares all the values of the concentration matrix between the parallel versions and the sequential version to ensure that the results are correct.
+
+:warning: The MPI version is not yet implemented in Python module, so use the shell script instead.
 
 ## Using the Python Module
 The diffusion Python module provides an interface for solving diffusion equations using the shared C library compiled with the CMake. This allows for efficient numerical simulations by leveraging the computational speed of C while maintaining the flexibility and ease of use of Python.
