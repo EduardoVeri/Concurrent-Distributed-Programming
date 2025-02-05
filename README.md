@@ -20,11 +20,15 @@ To build the project, you can use the following commands on the project root dir
 ```bash
 # Generate configuration files. 
 # Run this command only once or when you want to change the optimization flag
-cmake -B build -S . [-DNO_OPTIMIZATION=ON/OFF]
+cmake -B build -S . [-DNO_OPTIMIZATION=ON] [-DENABLE_VERBOSE=ON] [-DENABLE_EVALUATE=ON]
 
 # Run this command every time you want to compile the project
 cmake --build build 
 ```
+
+- `NO_OPTIMIZATION` flag can be used to disable compiler optimizations. By default, the project is built with optimizations enabled. To disable optimizations, use `-DNO_OPTIMIZATION=ON`. **Note that the optimization process can vectorize the code so well that the parallelization does not provide any speedup**. In such cases, you can disable optimizations to see the effect of it.
+- `ENABLE_VERBOSE` flag can be used to enable verbose mode during the compilation process. This will print more about the values off the steps in the diffusion equation. To enable verbose mode, use `-DENABLE_VERBOSE=ON`.
+- `ENABLE_EVALUATE` flag can be used to enable evaluation mode during the compilation process. This will print only the final time of the simulation. To enable evaluation mode, use `-DENABLE_EVALUATE=ON`. (**Don't use this flag with the `ENABLE_VERBOSE` flag**)
 
 Otherwise, you can use the following shell script to build the project:
 ```bash
@@ -45,7 +49,6 @@ This will create a `build` directory and generate three files in it:
 
 The `sequential` executable is the sequential version of the diffusion equation solver, while the `omp`, `cuda` and `mpi` executables are the parallel versions using OpenMP, Compute Unified Device Architecture (CUDA) and Message Passing Interface (MPI), respectively. The shared library `libDiffusionEquation.so` can be used to interface with the diffusion solver in Python.
 
-The `NO_OPTIMIZATION` flag can be used to disable compiler optimizations. By default, the project is built with optimizations enabled. To disable optimizations, use `-DNO_OPTIMIZATION=ON`. **Note that the optimization process can vectorize the code so well that the parallelization does not provide any speedup**. In such cases, you can disable optimizations to see the effect of it.
 
 ## Using the C executable
 The C executable provides a command-line interface for solving diffusion equations. The executable takes the following command-line arguments:
