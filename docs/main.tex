@@ -321,7 +321,7 @@ facilidade de uso do Python, possibilitando a configuração de parâmetros como
 tamanho da matriz, coeficiente de difusão e dimensões dos blocos de
 \textit{threads}.
 
-\begin{lstlisting}[style=PythonStyle, caption={Implementação paralelizada utilizando CUDA.}, label={cod:cuda}]
+\begin{lstlisting}[style=PythonStyle, caption={Implementação paralelizada utilizando CUDA.}, label={cod:pythonlib}]
 from diffusion import (
     SequentialDiffusionEquation,
     OMPdiffusionEquation,
@@ -482,15 +482,35 @@ CUDA correspondente.
   \vspace{0.3cm}
   \begin{tabular}{||c c c||}
     \hline
-    Experimento     & Tempo             & SpeedUp \\ [0.5ex]
+    Experimento   & Tempo            & SpeedUp \\ [0.5ex]
     \hline\hline
-    Sequencial      & 124.10 $\pm$ 3.86 & 1.0     \\
+    Sequencial    & 27.23 $\pm$ 2.36 & 1.0     \\
     \hline
-    OMP (4 Threads) & 62.89 $\pm$ 2.38  & 1.97    \\
+    OMP (1T)      & 26.33 $\pm$ 1.09 & 1.03    \\
     \hline
-    CUDA (16, 16)   & 23.32 $\pm$ 0.52  & 5.32    \\
+    OMP (2T)      & 16.58 $\pm$ 1.72 & 1.64    \\
     \hline
-    CUDA (32, 32)   & 25.05 $\pm$ 0.49  & 4.95    \\
+    OMP (4T)      & 13.34 $\pm$ 1.52 & 2.04    \\
+    \hline
+    OMP (8T)      & 13.38 $\pm$ 1.54 & 2.35    \\
+    \hline
+    OMP (16T)     & 13.75 $\pm$ 1.42 & 1.98    \\
+    \hline
+    OMP (32T)     & 13.96 $\pm$ 1.46 & 1.95    \\
+    \hline
+    MPI (1P)      & 25.47 $\pm$ 1.64 & 1.07    \\
+    \hline
+    MPI (2P)      & 16.51 $\pm$ 1.61 & 1.65    \\
+    \hline
+    MPI (4P)      & 13.53 $\pm$ 1.52 & 2.01    \\
+    \hline
+    MPI (8P)      & 15.88 $\pm$ 1.71 & 1.71    \\
+    \hline
+    MPI (16P)     & 18.03 $\pm$ 1.40 & 1.51    \\
+    \hline
+    MPI (32P)     & 19.60 $\pm$ 1.51 & 1.39    \\
+    \hline
+    CUDA (16, 16) & 5.23 $\pm$ 1.04  & 5.21    \\
     \hline
   \end{tabular}
 \end{table}
