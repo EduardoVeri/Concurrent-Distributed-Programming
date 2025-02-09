@@ -13,6 +13,9 @@ cd build
 mkdir -p results
 cd results
 
+# Sleep for 70 seconds to wait for the previous job to finish
+sleep 70
+
 N=2000
 N_EVAL=15
 N_STEPS=500
@@ -21,15 +24,15 @@ echo -e "${YELLOW}Running simulations...${RESET}"
 ../sequential $N_EVAL $N $N_STEPS 0.1 0.01 1.0 >seq.txt
 echo -e "${GREEN}Sequential simulation completed${RESET}"
 
-# for i in 1 2 4 8 16 32; do
-#     echo -e "${YELLOW}Running OpenMP simulation with $i threads...${RESET}"
-#     ../omp $N_EVAL $N $N_STEPS 0.1 0.01 1.0 $i > omp_$i.txt
-#     echo -e "${GREEN}OpenMP simulation with $i threads completed${RESET}"
-# done
+for i in 1 2 4 8 16 32; do
+    echo -e "${YELLOW}Running OpenMP simulation with $i threads...${RESET}"
+    ../omp $N_EVAL $N $N_STEPS 0.1 0.01 1.0 $i > omp_$i.txt
+    echo -e "${GREEN}OpenMP simulation with $i threads completed${RESET}"
+done
 
-echo -e "${YELLOW}Running OpenMP simulation with 4 thread...${RESET}"
-../omp $N_EVAL $N $N_STEPS 0.1 0.01 1.0 4 >omp_4.txt
-echo -e "${GREEN}OpenMP simulation with 4 thread completed${RESET}"
+# echo -e "${YELLOW}Running OpenMP simulation with 4 thread...${RESET}"
+# ../omp $N_EVAL $N $N_STEPS 0.1 0.01 1.0 4 >omp_4.txt
+# echo -e "${GREEN}OpenMP simulation with 4 thread completed${RESET}"
 
 echo -e "${YELLOW}Running CUDA simulation...${RESET}"
 ../cuda $N_EVAL $N $N_STEPS 0.1 0.01 1.0 >cuda.txt
