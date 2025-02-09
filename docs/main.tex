@@ -102,13 +102,13 @@ estrutura do código original.
 
 \begin{description}
   \item[\texttt{\#pragma omp parallel for collapse(2)}:]
-        Esta diretiva divide automaticamente os laços de cálculo entre diversos \texttt{threads}. Cada \texttt{thread} é responsável por atualizar uma parte distinta da matriz, permitindo que várias seções do cálculo sejam processadas simultaneamente. O parâmetro \texttt{collapse(2)} indica que os dois laços aninhados serão combinados para otimizar o paralelismo.
+        Esta diretiva divide automaticamente os laços de cálculo entre diversos \textit{threads}. Cada \textit{thread} é responsável por atualizar uma parte distinta da matriz, permitindo que várias seções do cálculo sejam processadas simultaneamente. O parâmetro \texttt{collapse(2)} indica que os dois laços aninhados serão combinados para otimizar o paralelismo.
 
   \item[\texttt{\#pragma omp parallel for reduction(+:difmedio) collapse(2)}:]
-        Assim como a diretiva anterior, esta instrução paraleliza as iterações do laço, porém com o acréscimo de uma operação de redução. Essa redução garante que o somatório, utilizado para monitorar a convergência do algoritmo, seja realizado de forma segura entre os diferentes \texttt{threads}.
+        Assim como a diretiva anterior, esta instrução paraleliza as iterações do laço, porém com o acréscimo de uma operação de redução. Essa redução garante que o somatório, utilizado para monitorar a convergência do algoritmo, seja realizado de forma segura entre os diferentes \textit{threads}.
 
   \item[\texttt{omp\_set\_num\_threads(int num\_threads)}:]
-        Esta função permite configurar dinamicamente o número de \texttt{threads} a serem utilizados, sendo essencial para testes e análises de desempenho.
+        Esta função permite configurar dinamicamente o número de \textit{threads} a serem utilizados, sendo essencial para testes e análises de desempenho.
 \end{description}
 
 \subsection{Código Paralelo em CUDA}
@@ -116,37 +116,49 @@ estrutura do código original.
 Nesta implementação, o algoritmo de difusão foi otimizado para execução em
 GPUs, aproveitando a arquitetura CUDA (Compute Unified Device Architecture). A
 abordagem distribui o cálculo da atualização das células da matriz de
-concentração entre milhares de \texttt{threads}, onde cada uma é responsável
-por processar uma célula individualmente, conforme o método de diferenças
-finitas.
+concentração entre milhares de \texttt{threads}, onde cada uma processa
+individualmente uma célula da matriz utilizando o método de diferenças finitas.
+Essa estratégia maximiza a paralelização, resultando em desempenho superior
+quando comparada às implementações sequencial e mesmo às paralelas em CPU.
 
-O kernel \texttt{diffusion\_kernel} é o responsável por calcular a nova
-concentração de cada célula com base nos valores dos seus vizinhos imediatos.
-Este kernel é lançado em uma grade (\textit{grid}) composta por blocos de
-\texttt{threads}, cujas dimensões podem ser ajustadas para maximizar o uso dos
-recursos da GPU. Ademais, a utilização de memória compartilhada
-(\texttt{\_\_shared\_\_}) acelera a soma das diferenças de concentração, fator
-crucial para a verificação da convergência do algoritmo.
+O kernel \texttt{diffusion\_kernel} é responsável por calcular a nova
+concentração de cada célula com base nos valores dos seus vizinhos imediatos,
+aplicando a fórmula de difusão que incorpora os parâmetros de difusão, tempo e
+espaço. Este kernel é lançado em uma grade (\textit{grid}) composta por blocos
+de \texttt{threads}, cujas dimensões podem ser configuradas dinamicamente
+através da função \texttt{set\_block\_dimensions}. A utilização de memória
+compartilhada (\texttt{\_\_shared\_\_}) acelera a acumulação dos valores
+diferenciais, facilitando a verificação da convergência do algoritmo.
 
 \textbf{Etapas do Fluxo de Execução:}
 \begin{enumerate}
   \item \textbf{Inicialização (\texttt{cuda\_init}):}
         Aloca a memória necessária na GPU e transfere os dados iniciais da CPU para a memória do dispositivo.
-
   \item \textbf{Execução do Kernel (\texttt{cuda\_diff\_eq}):}
         Lança o kernel que atualiza os valores da matriz e calcula a diferença média entre iterações.
-
   \item \textbf{Recuperação dos Dados (\texttt{cuda\_get\_result}):}
         Transfere os resultados computados na GPU de volta para a CPU.
-
   \item \textbf{Finalização (\texttt{cuda\_finalize}):}
         Libera a memória previamente alocada na GPU.
 \end{enumerate}
 
+Para facilitar a implementação do algoritmo \textit{stencil} na GPU, a matriz
+bidimensional foi convertida em um vetor unidimensional, onde as linhas são
+concatenadas. Essa abordagem simplifica o acesso à memória, exigindo apenas um
+cálculo cuidadoso dos índices para que cada \textit{thread} acesse o elemento
+correto.
+
+Para a operação de redução, cada \textit{thread} inicialmente armazena sua
+contribuição em memória compartilhada. Em seguida, o kernel realiza uma soma
+hierárquica, agregando os valores de forma progressiva até que reste um único
+valor por bloco. Esse resultado final é copiado para a memória global,
+possibilitando o cálculo da diferença média total já na CPU e,
+consequentemente, a verificação da convergência do algoritmo.
+
 Adicionalmente, a função \texttt{set\_block\_dimensions} possibilita o ajuste
-das dimensões dos blocos de \texttt{threads}, permitindo a experimentação com
-diferentes granularidades de paralelismo e desempenho, a fim de balancear
-eficientemente a carga entre os multiprocessadores da GPU.
+das dimensões dos blocos de \textit{threads}, permitindo a experimentação com
+diferentes granularidades de paralelismo para um balanceamento eficiente da
+carga entre os multiprocessadores da GPU.
 
 \subsection{Interface Python e ferramenta CMake}
 
@@ -159,13 +171,13 @@ disparidades — são desabilitadas por meio de flags específicas, permitindo u
 execução mais direta e comparável.
 
 Paralelamente, foi implementada uma interface Python usando o módulo
-\texttt{ctypes} para carregar dinamicamente as bibliotecas compiladas e mapear
+\textit{ctypes} para carregar dinamicamente as bibliotecas compiladas e mapear
 suas funções, facilitando a integração com métodos de análise e visualização
 desenvolvidos em notebooks Jupyter. Inspirada em bibliotecas como o NumPy, essa
 abordagem combina a eficiência das implementações em C com a flexibilidade e a
 facilidade de uso do Python, possibilitando a configuração de parâmetros como
 tamanho da matriz, coeficiente de difusão e dimensões dos blocos de
-\texttt{threads}.
+\textit{threads}.
 
 Adicionalmente, a classe \texttt{CUDADiffusionEquation} centraliza a interface
 para a solução da equação de difusão, gerenciando a inicialização da GPU, a
