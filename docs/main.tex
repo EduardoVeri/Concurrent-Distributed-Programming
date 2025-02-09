@@ -69,6 +69,7 @@
 % Estilo para código em Python
 \lstdefinestyle{PythonStyle}{
   language=Python,
+  morekeywords=[2]{SequentialDiffusionEquation,with,OMPdiffusionEquation,CUDADiffusionEquation},
   % Outras opções específicas para Python podem ser adicionadas aqui
 }
 
@@ -172,7 +173,7 @@ trabalho entre múltiplos núcleos, mantendo a lógica do algoritmo sequencial.
 Essa distribuição é realizada através de diretivas específicas inseridas na
 estrutura do código original.
 
-\begin{lstlisting}[style=CStyle, caption={Implementação paralelizada utilizando a biblioteca OMP.}, label={cod:omp}]
+\begin{lstlisting}[style=CStyle, caption={Implementação paralelizada utilizando a biblioteca OpenMP.}, label={cod:omp}]
 double omp_diff_eq(double **C, double **C_new, DiffEqArgs *args) {
     int N = args->N;
     double D = args->D;
@@ -212,6 +213,55 @@ concentração entre milhares de \texttt{threads}, onde cada uma processa
 individualmente uma célula da matriz utilizando o método de diferenças finitas.
 Essa estratégia maximiza a paralelização, resultando em desempenho superior
 quando comparada às implementações sequencial e mesmo às paralelas em CPU.
+
+\begin{lstlisting}[style=CUDAStyle, caption={Implementação paralelizada utilizando CUDA.}, label={cod:cuda}]
+__global__ void diffusion_kernel(double *C, double *C_new, double *block_sums, int N, double D, double DELTA_T, double DELTA_X) {
+    extern __shared__ double sdata[]; 
+
+    int i = blockIdx.y * blockDim.y + threadIdx.y + 1;
+    int j = blockIdx.x * blockDim.x + threadIdx.x + 1;
+
+    double diff_val = 0.0f;
+
+    if (i < N - 1 && j < N - 1) {
+        int idx = i * N + j;
+        double up = C[(i - 1) * N + j];
+        double down = C[(i + 1) * N + j];
+        double left = C[i * N + (j - 1)];
+        double right = C[i * N + (j + 1)];
+        double center = C[idx];
+
+        C_new[idx] = center + D * DELTA_T * ((up + down + left + right - 4 * center) / (DELTA_X * DELTA_X));
+
+        diff_val = fabs(C_new[idx] - center);
+    }
+
+    int tid = threadIdx.y * blockDim.x + threadIdx.x;
+    sdata[tid] = diff_val;
+    __syncthreads();
+
+    for (unsigned int s = (blockDim.x * blockDim.y) / 2; s > 32; s >>= 1) {
+        if (tid < s) {
+            sdata[tid] += sdata[tid + s];
+        }
+        __syncthreads();
+    }
+
+    if (tid < 32) {
+        volatile double *vsmem = sdata;
+        vsmem[tid] += vsmem[tid + 32];
+        vsmem[tid] += vsmem[tid + 16];
+        vsmem[tid] += vsmem[tid + 8];
+        vsmem[tid] += vsmem[tid + 4];
+        vsmem[tid] += vsmem[tid + 2];
+        vsmem[tid] += vsmem[tid + 1];
+    }
+
+    if (tid == 0) {
+        block_sums[blockIdx.y * gridDim.x + blockIdx.x] = sdata[0];
+    }
+}
+\end{lstlisting}
 
 O kernel \texttt{diffusion\_kernel} é responsável por calcular a nova
 concentração de cada célula com base nos valores dos seus vizinhos imediatos,
@@ -271,12 +321,55 @@ facilidade de uso do Python, possibilitando a configuração de parâmetros como
 tamanho da matriz, coeficiente de difusão e dimensões dos blocos de
 \textit{threads}.
 
-Adicionalmente, a classe \texttt{CUDADiffusionEquation} centraliza a interface
-para a solução da equação de difusão, gerenciando a inicialização da GPU, a
-execução dos kernels CUDA e a liberação de recursos, o que assegura uma
-operação eficiente e segura. Dessa forma, o projeto permite uma comparação
-direta entre os diferentes paradigmas de implementação, evidenciando suas
-vantagens e limitações para o estudo do desempenho computacional.
+\begin{lstlisting}[style=PythonStyle, caption={Implementação paralelizada utilizando CUDA.}, label={cod:cuda}]
+from diffusion import (
+    SequentialDiffusionEquation,
+    OMPdiffusionEquation,
+    CUDADiffusionEquation,
+)
+
+lib_path = "./build/libDiffusionEquation.so"
+
+# Context manager is not necessary for sequential and OMP
+# solver, but it is recommended to use it even for them
+with SequentialDiffusionEquation(
+    library_path=lib_path, N=200, D=0.05, DELTA_T=0.02, DELTA_X=1.0,
+    initial_concentration_points={(100, 100): 1.0},
+) as seq_solver:
+
+    for _ in range(1000): # Perform 1000 simulation steps
+        diff_seq = seq_solver.step()  # Execute the C code step
+    
+    value_at_center = seq_solver.concentration_matrix[100][100]
+    print(f"Sequential diffusion value at center: {value_at_center}")
+
+
+with OMPdiffusionEquation(
+    library_path=lib_path, N=200, D=0.05, DELTA_T=0.02, DELTA_X=1.0,
+    initial_concentration_points={(100, 100): 1.0},
+) as omp_solver:
+
+    for _ in range(1000):
+        diff_omp = omp_solver.step()  # Execute the OpenMP step
+    
+    value_at_center = omp_solver.concentration_matrix[100][100]
+    print(f"OMP diffusion value at center: {value_at_center}")
+
+
+# Context manager is necessary for CUDA solver
+# You also can free them manually by calling the finalize method
+with CUDADiffusionEquation(
+    library_path=lib_path, N=200, D=0.05, DELTA_T=0.02, DELTA_X=1.0,
+    initial_concentration_points={(100, 100): 1.0},
+) as cuda_solver:
+
+    for _ in range(1000):
+        diff_cuda = cuda_solver.step()  # Execute the cuda step
+    
+    cuda_solver.get_result() # Get the result from the device to the host
+    value_at_center = cuda_solver.concentration_matrix[100][100]
+    print(f"CUDA diffusion value at center: {value_at_center}")
+\end{lstlisting}
 
 \section{Resultados}
 
