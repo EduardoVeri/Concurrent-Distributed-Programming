@@ -383,25 +383,21 @@ with SequentialDiffusionEquation(
     library_path=lib_path, N=200, D=0.05, DELTA_T=0.02, DELTA_X=1.0,
     initial_concentration_points={(100, 100): 1.0},
 ) as seq_solver:
-
     for _ in range(1000): # Perform 1000 simulation steps
-        diff_seq = seq_solver.step()  # Execute the C code step
+        diff_seq = seq_solver.step()  # Execute seq C code step
     
     value_at_center = seq_solver.concentration_matrix[100][100]
     print(f"Sequential diffusion value at center: {value_at_center}")
-
 
 with OMPdiffusionEquation(
     library_path=lib_path, N=200, D=0.05, DELTA_T=0.02, DELTA_X=1.0,
     initial_concentration_points={(100, 100): 1.0},
 ) as omp_solver:
-
     for _ in range(1000):
-        diff_omp = omp_solver.step()  # Execute the OpenMP step
+        diff_omp = omp_solver.step()  # Execute OpenMP step
     
     value_at_center = omp_solver.concentration_matrix[100][100]
     print(f"OMP diffusion value at center: {value_at_center}")
-
 
 # Context manager is necessary for CUDA solver
 # You also can free them manually by calling the finalize method
@@ -409,11 +405,10 @@ with CUDADiffusionEquation(
     library_path=lib_path, N=200, D=0.05, DELTA_T=0.02, DELTA_X=1.0,
     initial_concentration_points={(100, 100): 1.0},
 ) as cuda_solver:
-
     for _ in range(1000):
-        diff_cuda = cuda_solver.step()  # Execute the cuda step
+        diff_cuda = cuda_solver.step()  # Execute cuda step
     
-    cuda_solver.get_result() # Get the result from the device to the host
+    cuda_solver.get_result() # Get the result from device to host
     value_at_center = cuda_solver.concentration_matrix[100][100]
     print(f"CUDA diffusion value at center: {value_at_center}")
 \end{lstlisting}
@@ -568,29 +563,28 @@ CUDA correspondente.
   \caption{Gráfico de Speedup para experimentos da Tabela~\ref{tab:Resultados}.}\label{fig:speedupxthread}
 \end{figure}
 
-A visualização dos dados por meio de gráficos de \textit{boxplot}
-(Figura~\ref{fig:Boxplots}) é um ótimo meio para avaliar o desempenho do
-algoritmo, considerando as possíveis incertezas que advêm do sistema
-computacional em que ele está inserido. Problemas de priorização de tarefas,
-alocação de recursos e utilização do sistema pelo usuário podem introduzir
-variações significativas no tempo de execução e na eficiência geral do
-algoritmo. Essas flutuações são facilmente identificadas por meio dos gráficos,
-ilustrando que existe uma pequena diferença de poucos segundos que podem
-influenciar no tempo de execução final do programa.
+Os resultados apresentados na Tabela~\ref{tab:Resultados} estão em conformidade
+com as expectativas, considerando as especificações de hardware descritas na
+Tabela~\ref{tab:especificacaoHardware}. Dentre as abordagens testadas, a
+implementação em CUDA destacou-se por alcançar o melhor desempenho. Esse
+resultado se deve, principalmente, à capacidade das GPUs de realizar um
+paralelismo massivo – permitindo a execução simultânea de centenas de
+\textit{threads} –, bem como à gestão eficiente da memória. Em contrapartida,
+as implementações com OpenMP e MPI esbarram nas limitações impostas pelos 4
+núcleos lógicos da CPU. Enquanto o OpenMP consegue mitigar essa restrição com a
+criação de \textit{threads} adicionais sem perdas expressivas de desempenho, o
+MPI sofre com um \textit{overhead} considerável decorrente da criação de novos
+processos e da comunicação via troca de mensagens.
 
-Nota-se uma grande eficiência do tempo de execução do algoritmo de CUDA em
-relação ao sequencial e OpenMP, o que demonstra o quão importante esse hardware
-pode ser para tarefas que demandam cálculos extremos, como os de aprendizado de
-máquina, por exemplo. Porém, importante ressaltar que esse ganho será menor se
-o tamanho da simulação for reduzido, já que todo o processo de alocar, enviar e
-receber dados e administrar a GPU possui um custo, que pode ser evitado ao
-utilizar apenas as threads da própria CPU\@.
-
-O desempenho inferior do CUDA com \textit{block dim} (32, 32) em relação ao
-(16, 16) ocorre porque blocos maiores podem causar um maior uso de recursos,
-como memória compartilhada e registradores, levando à saturação da capacidade
-da GPU\@. Isso resulta em maior latência devido à competição entre blocos por
-recursos limitados.
+A eficiência do processamento paralelo evidenciada pela abordagem CUDA ressalta
+o potencial das GPUs para tarefas que exigem cálculos intensivos, como os
+algoritmos de aprendizado de máquina. Contudo, em simulações de menor escala os
+benefícios podem ser menos significativos, pois os custos de alocação,
+transferência e gerenciamento dos dados na GPU podem superar as vantagens do
+paralelismo. Além disso, embora o MPI apresente limitações em ambientes com
+poucos núcleos lógicos, sua utilização em \textit{clusters} distribuídos pode
+explorar um paralelismo massivo, resultando em desempenho potencialmente
+superior.
 
 \section{Conclusão}
 
