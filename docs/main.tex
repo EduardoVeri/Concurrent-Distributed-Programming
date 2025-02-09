@@ -21,6 +21,59 @@
 \usepackage[brazil]{babel}
 \usepackage[utf8]{inputenc}
 
+\usepackage{listings}
+\usepackage{xcolor}
+
+% Definição de cores personalizadas
+\definecolor{mygreen}{rgb}{0,0.6,0}        % Para comentários
+\definecolor{mygray}{rgb}{0.5,0.5,0.5}       % Para números de linha
+\definecolor{mymauve}{rgb}{0.58,0,0.82}       % Para strings
+\definecolor{myblue}{rgb}{0,0,0.8}            % Para palavras-chave
+\definecolor{lightgray}{rgb}{0.95,0.95,0.95}  % Fundo dos códigos
+
+% Configuração padrão para todos os códigos
+\lstset{
+  backgroundcolor=\color{lightgray},
+  basicstyle=\ttfamily\footnotesize,
+  breaklines=true,
+  captionpos=b,
+  numbers=left,
+  numberstyle=\tiny\color{mygray},
+  frame=single,
+  keywordstyle=\color{myblue}\bfseries,
+  commentstyle=\color{mygreen}\itshape,
+  stringstyle=\color{mymauve},
+  tabsize=4,
+  showstringspaces=false,
+  aboveskip=10pt,
+  belowskip=5pt
+}
+% Estilo para código em C
+\lstdefinestyle{CStyle}{
+  language=C,
+  % Outras opções específicas para C podem ser adicionadas aqui
+}
+
+% Definindo uma linguagem para CUDA baseada em C++
+\lstdefinelanguage{CUDA}[]{C++}{
+  morekeywords={__global__, __device__, __shared__, __host__},
+  % Caso necessário, adicione mais palavras-chave ou opções específicas
+}
+
+% Estilo para código em CUDA
+\lstdefinestyle{CUDAStyle}{
+  language=CUDA,
+  % Outras configurações específicas para CUDA podem ser adicionadas aqui
+}
+
+% Estilo para código em Python
+\lstdefinestyle{PythonStyle}{
+  language=Python,
+  % Outras opções específicas para Python podem ser adicionadas aqui
+}
+
+\renewcommand{\lstlistingname}{Código}
+
 \sloppy
 
 \title{Análise de Desempenho Paralelo de Modelos de Difusão de Contaminantes em
@@ -93,12 +146,51 @@ da matriz. A atualização de cada célula depende da média das concentrações
 seus vizinhos imediatos e de parâmetros físicos como coeficiente de difusão, o
 intervalo de tempo $\Delta t$ e o espaçamento espacial $\Delta x$.
 
+\begin{lstlisting}[style=CStyle, caption={Código sequencial da para cálculo da difusão, que será utilizado como base para as demais implementações.}, label={cod:seq}]
+double sequential_diff_eq(double **C, double **C_new, DiffEqArgs *args) {
+    int N = args->N;
+    double D = args->D;
+    double DELTA_T = args->DELTA_T;
+    double DELTA_X = args->DELTA_X;
+    double difmedio = 0.;
+
+    for (int i = 1; i < N - 1; i++) {
+        for (int j = 1; j < N - 1; j++) {
+            C_new[i][j] = C[i][j] + D * DELTA_T * ((C[i + 1][j] + C[i - 1][j] + C[i][j + 1] + C[i][j - 1] - 4 * C[i][j]) / (DELTA_X * DELTA_X));
+            difmedio += fabs(C_new[i][j] - C[i][j]);
+        }
+    }
+
+    return difmedio / ((N - 2) * (N - 2));
+}
+\end{lstlisting}
+
 \subsection{Código Paralelo em Open Multi-Processing (OMP)}
 
 A implementação paralela utiliza a biblioteca OpenMP para distribuir a carga de
 trabalho entre múltiplos núcleos, mantendo a lógica do algoritmo sequencial.
 Essa distribuição é realizada através de diretivas específicas inseridas na
 estrutura do código original.
+
+\begin{lstlisting}[style=CStyle, caption={Implementação paralelizada utilizando a biblioteca OMP.}, label={cod:omp}]
+double omp_diff_eq(double **C, double **C_new, DiffEqArgs *args) {
+    int N = args->N;
+    double D = args->D;
+    double DELTA_T = args->DELTA_T;
+    double DELTA_X = args->DELTA_X;
+    double difmedio = 0.;
+
+#pragma omp parallel for collapse(2) reduction(+ : difmedio)
+    for (int i = 1; i < N - 1; i++) {
+        for (int j = 1; j < N - 1; j++) {
+            C_new[i][j] = C[i][j] + D * DELTA_T * ((C[i + 1][j] + C[i - 1][j] + C[i][j + 1] + C[i][j - 1] - 4 * C[i][j]) / (DELTA_X * DELTA_X));
+            difmedio += fabs(C_new[i][j] - C[i][j]);
+        }
+    }
+
+    return difmedio / ((N - 2) * (N - 2));
+}
+\end{lstlisting}
 
 \begin{description}
   \item[\texttt{\#pragma omp parallel for collapse(2)}:]
