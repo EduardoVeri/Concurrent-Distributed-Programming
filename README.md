@@ -107,7 +107,8 @@ To install the Python module in editable mode, run:
 ```bash
 pip install -e .
 ```
-(The `-e` flag ensures that any changes to the source code are immediately reflected without needing to reinstall the module.)
+> [!TIP]
+> The `-e` flag ensures that any changes to the source code are immediately reflected without needing to reinstall the module.
 
 ### Usage Example
 Below is an example that demonstrates solving a 2D diffusion equation using the Python module:
