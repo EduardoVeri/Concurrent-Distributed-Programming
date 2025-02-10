@@ -106,9 +106,9 @@ processo.
 O fluxo de execução consiste nas seguintes etapas:
 
 \begin{itemize}
-  \item \textbf{Inicialização (\texttt{MPI\_Init\_thread()}):} Inicia com MPI\_Init\_thread(), definindo o número de processos e threads OpenMP. Cada processo MPI recebe sua parte da matriz global.
-  \item \textbf{Troca de dados entre processo:}Os processos MPI trocam as fronteiras das suas submatrizes com processos vizinhos usando comunicação assíncrona (MPI\_Isend() e MPI\_Irecv()).
-  \item \textbf{Calculo Paralelo:}Cada processo MPI aplica a equação diferencial na sua submatriz, paralelizando o cálculo com OpenMP (\#pragma omp parallel for).
+  \item \textbf{Inicialização:} Inicia com MPI\_Init\_thread(), definindo o número de processos e threads OpenMP. Cada processo MPI recebe sua parte da matriz global.
+  \item \textbf{Troca de dados entre processo:} Os processos MPI trocam as fronteiras das suas submatrizes com processos vizinhos usando comunicação assíncrona (MPI\_Isend() e MPI\_Irecv()).
+  \item \textbf{Calculo Paralelo:} Cada processo MPI aplica a equação diferencial na sua submatriz, paralelizando o cálculo com OpenMP (\#pragma omp parallel for).
   \item \textbf{Sincronização global:} A diferença entre os estados da matriz é calculada localmente e reduzida globalmente com MPI\_Allreduce(), garantindo consistência entre os processos.
   \item \textbf{Finalização:} Após completar todas as iterações, a memória é liberada e MPI\_Finalize() é chamado. O tempo total de execução é registrado e exibido pelo processo mestre.
 
@@ -145,7 +145,7 @@ paralelo, considerando possíveis erros que podem surgir na paralelização, com
 condições de corrida ou inconsistências de sincronização. Em seguida,
 ilustramos, por meio de mapas de calor, a atualização dos valores da matriz ao
 longo do tempo. Por fim, realizamos uma análise comparativa dos tempos médios
-de execução, \textit{speedup} e eficiência entre as duas versões.
+de execução e \textit{speedup} entre as duas versões.
 
 \subsection{Validação da Implementação}
 
@@ -190,7 +190,9 @@ uniformemente pela matriz, com valores próximos entre si.
 A análise de desempenho foi realizada em um computador \textit{desktop} com as
 especificações apresentadas na Tabela~\ref{tab:especificacaoHardware}. Ademais,
 as especificações dos parâmetros do problema foram incluídas na
-Tabela~\ref{tab:especificacaoSimulacao}.
+Tabela~\ref{tab:especificacaoSimulacao}. Note que a simulação do código MPI foi
+executada com variações no número de threads, porém mantendo em apenas uma
+única thread OMP.
 
 \begin{table}[ht]
   \centering
@@ -257,17 +259,17 @@ CUDA correspondente.
     \hline
     CUDA (16x16) & ---                  & 5.04 $\pm$ 1.02   & 1.0     \\
     \hline
-    MPI          & 1 P                  & 23.32  $\pm$ 1.19 & 1.04    \\
+    MPI          & 1T/1P                & 23.32  $\pm$ 1.19 & 1.04    \\
     \hline
-    MPI          & 2 P                  & 25.05  $\pm$ 1.52 & 1.69    \\
+    MPI          & 1T/2P                & 25.05  $\pm$ 1.52 & 1.69    \\
     \hline
-    MPI          & 4 P                  & 124.10 $\pm$ 1.33 & 2.01    \\
+    MPI          & 1T/4P                & 124.10 $\pm$ 1.33 & 2.01    \\
     \hline
-    MPI          & 8 P                  & 23.32  $\pm$ 1.34 & 1.70    \\
+    MPI          & 1T/8P                & 23.32  $\pm$ 1.34 & 1.70    \\
     \hline
-    MPI          & 16 P                 & 1.31   $\pm$ 1.31 & 1.57    \\
+    MPI          & 1T/16P               & 1.31   $\pm$ 1.31 & 1.57    \\
     \hline
-    MPI          & 32 P                 & 124.10 $\pm$ 1.81 & 1.31    \\
+    MPI          & 1T/32P               & 124.10 $\pm$ 1.81 & 1.31    \\
     \hline
   \end{tabular}
 \end{table}
