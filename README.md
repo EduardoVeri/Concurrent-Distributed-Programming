@@ -26,7 +26,7 @@ cmake -B build -S . [-DNO_OPTIMIZATION=ON] [-DENABLE_VERBOSE=ON] [-DENABLE_EVALU
 cmake --build build 
 ```
 
-[!CAUTION]
+> [!CAUTION]
 > **NO_OPTIMIZATION Flag:** The NO_OPTIMIZATION flag disables compiler optimizations. By default, the project is built with optimizations enabled, which can vectorize the code so well that the parallelization may not show significant speedup. Use this flag when you want to clearly see the benefits of parallel execution.
 
 - `ENABLE_VERBOSE` enables a verbose compilation mode to display detailed information about the diffusion equation's steps.
@@ -43,7 +43,7 @@ Alternatively, you can use the provided shell script to build the project:
 - `-e`: Evaluation mode (print only the final time)
 - `-v`: Verbose mode (show print messages)
 
-[!TIP]
+> [!TIP]
 > **Windows Users:** If you are using __Windows__, please use the `gcc` commands inside the script to compile the project.
 
 This process will create a `build` directory containing:
@@ -94,13 +94,13 @@ Evaluation commands:
 
 In the `notebooks` directory, you’ll find a Jupyter notebook that evaluates the performance of the parallel versions using the Python module. The notebook employs the `time` module to measure execution times and `matplotlib` to plot the results. It also verifies the concentration matrix values between the parallel and sequential versions.
 
-[!WARNING]
+> [!WARNING]
 > **MPI in Python:** The MPI version is not yet implemented in the Python module. Please use the shell script for MPI-based evaluations.
 
 ## Using the Python Module
 The diffusion Python module offers an interface for solving diffusion equations via the shared C library compiled with CMake. This integration provides the speed of C with the flexibility of Python, making it ideal for users who prefer Python for graphical visualizations or integration with other libraries.
 
-[!IMPORTANT]
+> [!IMPORTANT]
 > **Pre-requisite:** Ensure you have built the shared C library (libDiffusionEquation.so) following the build instructions above.
 
 To install the Python module in editable mode, run:
@@ -158,5 +158,5 @@ with CUDADiffusionEquation(
 
 ```
 
-[!TIP]
+> [!TIP]
 > **Resource Management:** Using context managers (the 'with' statement) ensures that all resources are properly freed after the simulation, especially for the CUDA solver.
