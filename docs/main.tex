@@ -20,6 +20,7 @@
 
 \usepackage[brazil]{babel}
 \usepackage[utf8]{inputenc}
+\usepackage{float}
 
 \sloppy
 
@@ -52,11 +53,11 @@
 \section{Introdução}
 
 A contaminação de corpos d'água, tais como lagos e rios, é um grande desafio ao
-meio ambiente e a saúde pública, sendo preciso entender a dispersão do
-contaminante no ambiente para poder realizar qualquer intervenção de mitigação.
-Dessa forma, este trabalho foca na modelagem numérica da difusão de poluentes
-em uma matriz bidimensional, utilizando o método de diferenças finitas para
-aproximar a equação de difusão discreta:
+meio ambiente e a saúde pública, sendo preciso entender a dispersão do contaminante no
+ambiente para poder realizar qualquer intervenção de
+mitigação. Dessa forma, este trabalho foca na modelagem numérica da
+difusão de poluentes em uma matriz bidimensional, utilizando o método de
+diferenças finitas para aproximar a equação de difusão discreta:
 
 \begin{equation}
   C_{i,j}^{t+1} = C_{i,j}^t + D \cdot \Delta t \cdot \left( \frac{C_{i+1,j}^t +
@@ -67,17 +68,18 @@ aproximar a equação de difusão discreta:
 
 Nesta equação, $C_{i,j}^t$ representa a concentração do contaminante na célula
 $(i,j)$ no instante $t$, $D$ é o coeficiente de difusão, $\Delta t$ o intervalo
-de tempo discreto e $\Delta x$ o espaçamento espacial. O objetivo principal é
-desenvolver uma simulação que modele a difusão de contaminantes aplicando
-programação paralela para acelerar os cálculos e analisar o comportamento dos
-poluentes ao longo do tempo. Serão comparadas as versões sequencial e paralela
-do algoritmo, utilizando OpenMP, CUDA e MPI para explorar o processamento
-simultâneo em múltiplos núcleos e dispositivos. Os resultados serão validados
-por meio de mapas de calor, gráficos de speedup e eficiência, além da
-comparação das matrizes geradas. Este estudo demonstra como técnicas de
-programação concorrente e distribuída podem otimizar simulações numéricas
-complexas, reforçando os conceitos aprendidos na disciplina e demonstrando sua
-aplicação prática no desenvolvimento de soluções eficientes.
+de tempo discreto e
+$\Delta x$ o espaçamento espacial. O objetivo principal é desenvolver uma
+simulação que modele a difusão de contaminantes aplicando programação paralela
+para acelerar os cálculos e analisar o comportamento dos poluentes ao longo do
+tempo. Serão comparadas as versões sequencial e paralela do algoritmo,
+utilizando OpenMP, CUDA e MPI para explorar o processamento simultâneo em
+múltiplos núcleos e dispositivos. Os resultados serão validados por meio de
+mapas de calor, gráficos de speedup e eficiência, além da comparação das
+matrizes geradas. Este estudo demonstra como técnicas de programação
+concorrente e distribuída podem otimizar simulações numéricas complexas,
+reforçando os conceitos aprendidos na disciplina e demonstrando sua aplicação
+prática no desenvolvimento de soluções eficientes.
 
 \section{Implementação do Algorítimo}
 
@@ -93,54 +95,31 @@ da matriz. A atualização de cada célula depende da média das concentrações
 seus vizinhos imediatos e de parâmetros físicos como coeficiente de difusão, o
 intervalo de tempo $\Delta t$ e o espaçamento espacial $\Delta x$.
 
-\subsection{Código Paralelo em CUDA}
+\subsection{Código Paralelo em MPI}
 
-O código paralelo em CUDA implementa uma versão otimizada do algoritmo de
-difusão, explorando a capacidade de paralelização massiva das GPUs. A CUDA
-(Compute Unified Device Architecture) permite distribuir o cálculo de
-atualização das células da matriz de concentração entre milhares de threads
-executadas simultaneamente. Cada thread é atribuída a uma célula específica da
-matriz, realizando cálculos independentes e simultâneos para atualizar os
-valores conforme o método de diferenças finitas.
-
-O kernel \texttt{diffusion\_kernel} é responsável por realizar o cálculo da
-nova concentração de cada célula com base nos valores dos seus vizinhos
-imediatos. Esse kernel é executado por uma grade (\textit{grid}) de blocos de
-threads, cujas dimensões são configuráveis para melhor aproveitamento dos
-recursos da GPU\@. A utilização de memória compartilhada
-(\texttt{\_\_shared\_\_}) permite acelerar a soma das diferenças das
-concentrações, essencial para verificar a convergência do algoritmo.
+A implementação do código foi desenvolvida utilizando MPI (Message Passing Interface) e OpenMP para combinar processamento distribuído e paralelismo em nível de threads. O objetivo principal do código é resolver uma equação diferencial parcial em um grid bidimensional, distribuindo os cálculos entre múltiplos processos MPI e utilizando OpenMP para paralelismo dentro de cada processo.
 
 O fluxo de execução consiste nas seguintes etapas:
 
 \begin{itemize}
-  \item \textbf{Inicialização (\texttt{cuda\_init}):} Aloca memória na GPU e transfere os dados iniciais da CPU para a GPU\@.
-  \item \textbf{Execução do kernel (\texttt{cuda\_diff\_eq}):} O kernel é executado, atualizando os valores da matriz e calculando a diferença média entre as iterações.
-  \item \textbf{Recuperação de Dados (\texttt{cuda\_get\_result}):} Transfere os resultados da GPU de volta para a CPU\@.
-  \item \textbf{Finalização (\texttt{cuda\_finalize}):} Libera a memória alocada na GPU\@.
+    \item \textbf{Inicialização (\texttt{MPI\_Init\_thread()}):} Inicia com MPI\_Init\_thread(), definindo o número de processos e threads OpenMP. Cada processo MPI recebe sua parte da matriz global.
+    \item \textbf{Troca de dados entre processo:}Os processos MPI trocam as fronteiras das suas submatrizes com processos vizinhos usando comunicação assíncrona (MPI\_Isend() e MPI\_Irecv()).
+    \item \textbf{Calculo Paralelo:}Cada processo MPI aplica a equação diferencial na sua submatriz, paralelizando o cálculo com OpenMP (\#pragma omp parallel for).
+    \item \textbf{Sincronização global:} A diferença entre os estados da matriz é calculada localmente e reduzida globalmente com MPI\_Allreduce(), garantindo consistência entre os processos.
+     \item \textbf{Finalização:} Após completar todas as iterações, a memória é liberada e MPI\_Finalize() é chamado. O tempo total de execução é registrado e exibido pelo processo mestre.
+
+
 \end{itemize}
 
-A configuração das dimensões dos blocos de threads pode ser ajustada através da
-função \texttt{set\_block\_dimensions}, permitindo experimentar diferentes
-granularidades de paralelismo e desempenho, equilibrando a carga de trabalho
-entre os multiprocessadores da GPU\@.
+Esse fluxo de execução garante que a carga de trabalho seja distribuída de maneira eficiente entre os processos MPI, enquanto OpenMP melhora o desempenho dentro de cada nó de processamento.
 
 \subsection{Interface Python e ferramenta CMake}
 
-Assim como na implementação em OpenMP, o projeto utiliza o CMake para a
-compilação do código CUDA, facilitando a definição de dependências e o processo
-de build. A integração com Python é realizada utilizando o módulo
-\texttt{ctypes}, que permite o carregamento dinâmico da biblioteca CUDA
-compilada e a chamada de suas funções diretamente em Python.
+Assim como na implementação em OpenMP, o projeto utiliza o CMake para a compilação do código CUDA, facilitando a definição de dependências e o processo de build. A integração com Python é realizada utilizando o módulo \texttt{ctypes}, que permite o carregamento dinâmico da biblioteca CUDA compilada e a chamada de suas funções diretamente em Python.
 
-A classe \texttt{CUDADiffusionEquation} implementa a interface Python para a
-solução da equação de difusão. Essa classe gerencia a inicialização da GPU, a
-execução dos kernels CUDA e a liberação de recursos, garantindo uma execução
-eficiente e segura. A interface permite configurar parâmetros como o tamanho da
-matriz, coeficiente de difusão e as dimensões dos blocos de threads. Com essa
-integração, é possível comparar diretamente o desempenho entre as
-implementações sequencial, OpenMP e CUDA, aproveitando a flexibilidade do
-Python para realizar análises e visualizações dos resultados.
+A classe \texttt{CUDADiffusionEquation} implementa a interface Python para a solução da equação de difusão. Essa classe gerencia a inicialização da GPU, a execução dos kernels CUDA e a liberação de recursos, garantindo uma execução eficiente e segura. A interface permite configurar parâmetros como o tamanho da matriz, coeficiente de difusão e as dimensões dos blocos de threads.
+
+Com essa integração, é possível comparar diretamente o desempenho entre as implementações sequencial, OpenMP e CUDA, aproveitando a flexibilidade do Python para realizar análises e visualizações dos resultados.
 
 \section{Resultados}
 
@@ -150,9 +129,9 @@ paralelo, considerando possíveis erros que podem surgir na paralelização, com
 condições de corrida ou inconsistências de sincronização. Em seguida,
 ilustramos, por meio de mapas de calor, a atualização dos valores da matriz ao
 longo do tempo. Por fim, realizamos uma análise comparativa dos tempos médios
-de execução e \textit{speedup} entre as duas versões.
+de execução, \textit{speedup} e eficiência entre as duas versões.
 
-\subsection{Validação da Implementação - Numérico}
+\subsection{Validação da Implementação}
 
 Para assegurar a correção das duas implementações, verificamos em cada iteração
 se os valores presentes em cada célula da matriz são idênticos. Dessa forma, o
@@ -165,25 +144,26 @@ corrida, uma vez que a escrita não é realizada na mesma região de memória da
 leituras, tornando o processamento de cada célula pelas \textit{threads}
 independente.
 
-\subsection{Validação da Implementação - Ilustrativo}
+\subsection{Validação da Implementação}
 
 Para ilustrar o funcionamento da implementação, foram gerados mapas de calor,
-representado pela Figura~\ref{fig:heatmap}, nos quais cada ponto de uma matriz
-50$\times$50 é representado por uma cor distinta. Cores escuras correspondem a
-valores próximos de um, indicando alta concentração do contaminante, enquanto
-cores claras representam valores próximos de zero, indicando baixa presença de
+representado pela Figura \ref{fig:heatmap}, nos quais cada ponto de uma matriz
+50x50 é representado por uma cor distinta. Cores escuras correspondem a valores
+próximos de um, indicando alta concentração do contaminante, enquanto cores
+claras representam valores próximos de zero, indicando baixa presença de
 contaminação.
 
 \begin{figure}[ht]
   \centering
-  \includegraphics[width=.5\textwidth]{figs/heatmap.png}
-  \caption{Mapa de calor em quatro instantes distintos da simulação.}\label{fig:heatmap}
+  \includegraphics[width=.6\textwidth]{figs/heatmap.png}
+  \caption{Mapa de calor em quatro instantes distintos da simulação.}
+  \label{fig:heatmap}
 \end{figure}
 
 Analisando a progressão dos mapas de calor, observamos que o comportamento faz
 sentido no contexto da solução proposta. Inicialmente, o contaminante é
 adicionado com alta concentração nas diagonais e no centro da matriz,
-evidenciado pelas regiões azuis-escuros. Com o avanço das iterações, o
+evidenciado pelas regiões azuis escuros. Com o avanço das iterações, o
 contaminante começa a se difundir para as regiões adjacentes, aumentando
 gradativamente a luminosidade nessas áreas e diminuindo nos pontos de
 concentração inicial. Na última iteração, a concentração se distribui
@@ -193,8 +173,8 @@ uniformemente pela matriz, com valores próximos entre si.
 
 A análise de desempenho foi realizada em um computador \textit{desktop} com as
 especificações apresentadas na Tabela~\ref{tab:especificacaoHardware}. Ademais,
-as especificações dos parâmetros do problema foram incluídas na
-Tabela~\ref{tab:especificacaoSimulacao}.
+as especificações dos parâmetros do
+problema foram incluídas na Tabela~\ref{tab:especificacaoSimulacao}.
 
 \begin{table}[ht]
   \centering
@@ -202,19 +182,18 @@ Tabela~\ref{tab:especificacaoSimulacao}.
   \vspace{0.3cm}
   \begin{tabular}{||c c||}
     \hline
-    Especificações      & Detalhes                         \\ [0.5ex]
+    Especificações      & Detalhes                  \\ [0.5ex]
     \hline\hline
-    Processador         & Intel i7--7500U @ 2.7GHz--3.5GHz \\
+    Processador         & Intel i7--4790 @ 3.60GHz  \\
     \hline
-    Núcleos / Lógicos   & 2 / 4                            \\
+    Núcleos / Lógicos   & 4 / 8                     \\
     \hline
-    Memória RAM         & 10 GB                            \\
+    Memória RAM         & 8 GB                      \\
     \hline
-    Sistema Operacional & Ubuntu 22.04.05 (via WSL)        \\
+    Sistema Operacional & Ubuntu 22.04.05 (via WSL) \\
     \hline
-    GPU                 & NVIDIA GeForce 940MX - 2GB VRAM  \\
-    \hline
-  \end{tabular}\label{tab:especificacaoHardware}
+  \end{tabular}
+  \label{tab:especificacaoHardware}
 \end{table}
 
 \begin{table}[ht]
@@ -225,7 +204,7 @@ Tabela~\ref{tab:especificacaoSimulacao}.
     \hline
     Especificações             & Detalhes                    \\ [0.5ex]
     \hline\hline
-    Dimensão da Matriz (N $\times$ N) & 3000 $\times$ 3000                 \\
+    Dimensão da Matriz (N x N) & 3000 x 3000                 \\
     \hline
     Número de Iterações        & 1000                        \\
     \hline
@@ -233,11 +212,12 @@ Tabela~\ref{tab:especificacaoSimulacao}.
     \hline
     Coeficiente de Difusão     & 0.1                         \\
     \hline
-    $\Delta t$                 & 0.01                        \\
+    $\Delta t$                         & 0.01                        \\
     \hline
-    $\Delta x$                 & 1.0                         \\
+    $\Delta x$                         & 1.0                         \\
     \hline
-  \end{tabular}\label{tab:especificacaoSimulacao}
+  \end{tabular}
+  \label{tab:especificacaoSimulacao}
 \end{table}
 
 Para obter valores mais consistentes e minimizar influências externas, como
@@ -249,82 +229,44 @@ CUDA correspondente.
 \begin{table}[ht]
   \centering
   \caption{Tabela de comparação de desempenho entre o código sequencial e o
-    utilizando CUDA.}\label{tab:Resultados}
+    utilizando MPI.}
   \vspace{0.3cm}
-  \begin{tabular}{||c c c||}
+  \begin{tabular}{||c c c c c||}
     \hline
-    Experimento     & Tempo             & SpeedUp \\ [0.5ex]
+    Experimento &  N°Threads          & Tempo & STD & SpeedUp \\ [0.5ex]
     \hline\hline
-    Sequencial      & 124.10 $\pm$ 3.86 & 1.0     \\
+    Sequencial         & 1.0 & 124.10    & 0.73 & 1.0     \\
     \hline
-    OMP (4 Threads) & 62.89 $\pm$ 2.38  & 1.97    \\
+    MPI          & 1.0  & 23.32  & 1.19 & 1.04   \\
     \hline
-    CUDA (16, 16)    & 23.32 $\pm$ 0.52  & 5.32    \\
+    MPI          & 2.0  & 25.05   & 1.52 & 1.69  \\
     \hline
-    CUDA (32, 32)    & 25.05 $\pm$ 0.49  & 4.95    \\
+    MPI         & 4.0 & 124.10    & 1.33 & 2.01     \\
     \hline
+    MPI        & 8.0  & 23.32  & 1.34  & 1.70  \\
+    \hline
+    MPI         & 16.0  & 1.31  & 1.31 & 1.57  \\
+    \hline
+    MPI       & 32.0 & 124.10    & 1.81 & 1.31    \\
+    \hline    
   \end{tabular}
 \end{table}
 
-\begin{figure}[ht]
+O desempenho superior das aplicações com MPI em comparação com o sequencial se deve ao fato de que, enquanto a execução sequencial processa todas as tarefas de forma linear, o MPI divide a carga de trabalho entre vários processos que operam simultaneamente. Isso reduz significativamente o tempo de execução, especialmente para tarefas que podem ser facilmente paralelizadas, ao passo que a execução sequencial enfrenta limitações de desempenho por processar tudo de forma isolada, sem aproveitar o paralelismo.
+
+\begin{figure}[H]
   \centering
-  \begin{minipage}[b]{0.37\textwidth}
-    \centering
-    \includegraphics[width=\textwidth]{figs/times_boxplot_cuda.png}
-  \end{minipage}
-  \begin{minipage}[b]{0.25\textwidth}
-    \centering
-    \includegraphics[width=\textwidth]{figs/times_boxplot_omp.png}
-  \end{minipage}
-  \begin{minipage}[b]{0.25\textwidth}
-    \centering
-    \includegraphics[width=\textwidth]{figs/times_boxplot_sequential.png}
-  \end{minipage}
-  \caption{Gráficos \textit{boxplots} para os tempos de execução medidos para cada um dos experimentos registrados na Tabela~\ref{tab:Resultados}. }\label{fig:Boxplots}
+  \includegraphics[width=.40\textwidth]{docs/figs/speedupxthreads- MPI.png}
+  \caption{Gráfico de comparação de speedup pelo numero de threads}
+  \label{fig:boxplot_cuda}
 \end{figure}
 
-A visualização dos dados por meio de gráficos de \textit{boxplot}
-(Figura~\ref{fig:Boxplots}) é um ótimo meio para avaliar o desempenho do
-algoritmo, considerando as possíveis incertezas que advêm do sistema
-computacional em que ele está inserido. Problemas de priorização de tarefas,
-alocação de recursos e utilização do sistema pelo usuário podem introduzir
-variações significativas no tempo de execução e na eficiência geral do
-algoritmo. Essas flutuações são facilmente identificadas por meio dos gráficos,
-ilustrando que existe uma pequena diferença de poucos segundos que podem
-influenciar no tempo de execução final do programa.
 
-Nota-se uma grande eficiência do tempo de execução do algoritmo de CUDA em
-relação ao sequencial e OpenMP, o que demonstra o quão importante esse hardware
-pode ser para tarefas que demandam cálculos extremos, como os de aprendizado de
-máquina, por exemplo. Porém, importante ressaltar que esse ganho será menor se
-o tamanho da simulação for reduzido, já que todo o processo de alocar, enviar e
-receber dados e administrar a GPU possui um custo, que pode ser evitado ao
-utilizar apenas as threads da própria CPU\@.
-
-O desempenho inferior do CUDA com \textit{block dim} (32, 32) em relação ao
-(16, 16) ocorre porque blocos maiores podem causar um maior uso de recursos,
-como memória compartilhada e registradores, levando à saturação da capacidade
-da GPU\@. Isso resulta em maior latência devido à competição entre blocos por
-recursos limitados.
+O gráfico ilustra o speedup em função do número de threads em uma aplicação paralela com MPI, comparado ao speedup linear ideal e ao desempenho de OMP e CUDA. O melhor desempenho é alcançado com 4 threads, enquanto configurações com 16 e 32 threads mostram redução no speedup devido ao aumento do overhead de comunicação. As linhas horizontais destacam o desempenho superior de OMP e, especialmente, CUDA, que aproveita melhor o paralelismo em GPUs. O gráfico demonstra que o desempenho com MPI é limitado pelo balanceamento entre threads e overhead, sendo essencial ajustar o número de threads para maximizar os ganhos.
 
 \section{Conclusão}
+O uso de paralelismo com MPI proporciona ganhos significativos de desempenho em relação à execução sequencial, especialmente com um número moderado de threads, como 4, onde o balanceamento entre carga computacional e overhead é mais eficiente. No entanto, o desempenho tende a decrescer com o aumento excessivo de threads devido ao aumento do overhead de comunicação e sincronização entre processos. Comparando com OMP e CUDA, é evidente que essas tecnologias apresentam melhor eficiência para tarefas com alta demanda de paralelismo, destacando a capacidade de CUDA em explorar o paralelismo massivo das GPUs. 
 
-Com a introdução da implementação paralela utilizando CUDA, além da sequência e
-da versão OpenMP previamente analisadas, validou-se a correção dos resultados
-ao longo das diferentes abordagens e examinou-se o impacto do paralelismo no
-tempo de execução. Os experimentos demonstraram que, embora a paralelização com
-CUDA proporcione ganhos significativos em relação ao código sequencial, podem
-existir limitações na escalabilidade, que são decorrentes de \textit{overheads}
-de comunicação entre a CPU e a GPU, latências de memória e restrições
-arquiteturais do próprio hardware gráfico.
-
-Dessa forma, o estudo evidencia não apenas as vantagens práticas da
-paralelização em termos de desempenho e eficiência em simulações numéricas, mas
-também ressalta a importância de se compreender os desafios inerentes às
-diferentes estratégias paralelas. A experiência com CUDA complementa os
-conceitos fundamentais aprendidos em programação concorrente e distribuída,
-oferecendo percepções valiosas sobre a aplicabilidade e os limites da
-aceleração por GPU em contextos computacionais exigentes.
 
 \bibliographystyle{sbc}
 \bibliography{sbc-template}
