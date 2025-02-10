@@ -120,21 +120,22 @@ dentro de cada nó de processamento.
 
 \subsection{Interface Python e ferramenta CMake}
 
-Assim como na implementação em OpenMP, o projeto utiliza o CMake para a
-compilação do código CUDA, facilitando a definição de dependências e o processo
-de build. A integração com Python é realizada utilizando o módulo
-\texttt{ctypes}, que permite o carregamento dinâmico da biblioteca CUDA
-compilada e a chamada de suas funções diretamente em Python.
+O projeto utiliza o CMake como sistema de compilação para gerenciar processos e
+dependências tanto da implementação em OpenMP quanto da versão CUDA, definindo
+tudo por meio de arquivos de configuração. Para destacar as diferenças de
+desempenho entre as abordagens sequencial, OpenMP e CUDA, as otimizações do
+compilador — como a vetorização automática que inicialmente minimizava essas
+disparidades — são desabilitadas por meio de flags específicas, permitindo uma
+execução mais direta e comparável.
 
-A classe \texttt{CUDADiffusionEquation} implementa a interface Python para a
-solução da equação de difusão. Essa classe gerencia a inicialização da GPU, a
-execução dos kernels CUDA e a liberação de recursos, garantindo uma execução
-eficiente e segura. A interface permite configurar parâmetros como o tamanho da
-matriz, coeficiente de difusão e as dimensões dos blocos de threads.
-
-Com essa integração, é possível comparar diretamente o desempenho entre as
-implementações sequencial, OpenMP e CUDA, aproveitando a flexibilidade do
-Python para realizar análises e visualizações dos resultados.
+Paralelamente, foi implementada uma interface Python usando o módulo
+\textit{ctypes} para carregar dinamicamente as bibliotecas compiladas e mapear
+suas funções, facilitando a integração com métodos de análise e visualização
+desenvolvidos em notebooks Jupyter. Inspirada em bibliotecas como o NumPy, essa
+abordagem combina a eficiência das implementações em C com a flexibilidade e a
+facilidade de uso do Python, possibilitando a configuração de parâmetros como
+tamanho da matriz, coeficiente de difusão e dimensões dos blocos de
+\textit{threads}.
 
 \section{Resultados}
 
@@ -203,7 +204,7 @@ Tabela~\ref{tab:especificacaoSimulacao}.
     \hline
     Núcleos / Lógicos   & 4 / 8                     \\
     \hline
-    Memória RAM         & 8 GB                      \\
+    Memória RAM         & 10 GB                     \\
     \hline
     Sistema Operacional & Ubuntu 22.04.05 (via WSL) \\
     \hline
@@ -219,9 +220,9 @@ Tabela~\ref{tab:especificacaoSimulacao}.
     \hline
     Especificações             & Detalhes                    \\ [0.5ex]
     \hline\hline
-    Dimensão da Matriz (N x N) & 3000 x 3000                 \\
+    Dimensão da Matriz (N x N) & 2000 x 2000                 \\
     \hline
-    Número de Iterações        & 1000                        \\
+    Número de Iterações        & 500                         \\
     \hline
     Distribuição Inicial       & Alta concentração no centro \\
     \hline
@@ -248,25 +249,25 @@ CUDA correspondente.
   \vspace{0.3cm}
   \begin{tabular}{||c c c c||}
     \hline
-    Experimento  & N°Threads & Tempo             & SpeedUp \\ [0.5ex]
+    Experimento  & N° Threads/Processos & Tempo             & SpeedUp \\ [0.5ex]
     \hline\hline
-    Sequencial   & 1.0       & 124.10 $\pm$ 0.73 & 1.0     \\
+    Sequencial   & 1 T                  & 124.10 $\pm$ 0.73 & 1.0     \\
     \hline
-    OMP          & 4         & 12.28 $\pm$ 1.30  & 1.0     \\
+    OMP          & 4 T                  & 12.28 $\pm$ 1.30  & 1.0     \\
     \hline
-    CUDA (16x16) & ---       & 5.04 $\pm$ 1.02   & 1.0     \\
+    CUDA (16x16) & ---                  & 5.04 $\pm$ 1.02   & 1.0     \\
     \hline
-    MPI          & 1.0       & 23.32  $\pm$ 1.19 & 1.04    \\
+    MPI          & 1 P                  & 23.32  $\pm$ 1.19 & 1.04    \\
     \hline
-    MPI          & 2.0       & 25.05  $\pm$ 1.52 & 1.69    \\
+    MPI          & 2 P                  & 25.05  $\pm$ 1.52 & 1.69    \\
     \hline
-    MPI          & 4.0       & 124.10 $\pm$ 1.33 & 2.01    \\
+    MPI          & 4 P                  & 124.10 $\pm$ 1.33 & 2.01    \\
     \hline
-    MPI          & 8.0       & 23.32  $\pm$ 1.34 & 1.70    \\
+    MPI          & 8 P                  & 23.32  $\pm$ 1.34 & 1.70    \\
     \hline
-    MPI          & 16.0      & 1.31   $\pm$ 1.31 & 1.57    \\
+    MPI          & 16 P                 & 1.31   $\pm$ 1.31 & 1.57    \\
     \hline
-    MPI          & 32.0      & 124.10 $\pm$ 1.81 & 1.31    \\
+    MPI          & 32 P                 & 124.10 $\pm$ 1.81 & 1.31    \\
     \hline
   \end{tabular}
 \end{table}
