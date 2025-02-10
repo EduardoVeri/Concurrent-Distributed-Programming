@@ -27,12 +27,12 @@ cmake --build build
 ```
 
 > [!CAUTION]
-> **NO_OPTIMIZATION Flag:** The NO_OPTIMIZATION flag disables compiler optimizations. By default, the project is built with optimizations enabled, which can vectorize the code so well that the parallelization may not show significant speedup. Use this flag when you want to clearly see the benefits of parallel execution.
+> The `NO_OPTIMIZATION` flag disables compiler optimizations. By default, the project is built with optimizations enabled, which can vectorize the code so well that the parallelization may not show significant speedup. Use this flag when you want to clearly see the benefits of parallel execution.
 
 - `ENABLE_VERBOSE` enables a verbose compilation mode to display detailed information about the diffusion equation's steps.
 - `ENABLE_EVALUATE` enables an evaluation mode that prints only the final simulation time.
 
-[!IMPORTANT]
+> [!IMPORTANT]
 > **Flag Conflict:** Do not use ENABLE_VERBOSE together with ENABLE_EVALUATE as it may lead to unexpected behavior.
 
 Alternatively, you can use the provided shell script to build the project:
@@ -159,4 +159,4 @@ with CUDADiffusionEquation(
 ```
 
 > [!TIP]
-> **Resource Management:** Using context managers (the 'with' statement) ensures that all resources are properly freed after the simulation, especially for the CUDA solver.
+> **Resource Management:** Using context managers (the `with` statement) ensures that all resources are properly freed after the simulation, especially for the CUDA solver.
