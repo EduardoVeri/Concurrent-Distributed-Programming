@@ -171,7 +171,7 @@ contaminação.
 
 \begin{figure}[ht]
   \centering
-  \includegraphics[width=.6\textwidth]{figs/heatmap.png}
+  \includegraphics[width=.45\textwidth]{figs/heatmap.png}
   \caption{Mapa de calor em quatro instantes distintos da simulação.}
   \label{fig:heatmap}
 \end{figure}
@@ -216,7 +216,7 @@ executada com variações no número de threads, porém mantendo em apenas uma
 
 \begin{table}[ht]
   \centering
-  \caption{Tabela de especificação da Simulação}
+  \caption{Tabela de especificação da Simulação}\label{tab:especificacaoSimulacao}
   \vspace{0.3cm}
   \begin{tabular}{||c c||}
     \hline
@@ -235,7 +235,6 @@ executada com variações no número de threads, porém mantendo em apenas uma
     $\Delta x$                 & 1.0                         \\
     \hline
   \end{tabular}
-  \label{tab:especificacaoSimulacao}
 \end{table}
 
 Para obter valores mais consistentes e minimizar influências externas, como
@@ -247,7 +246,7 @@ CUDA correspondente.
 \begin{table}[ht]
   \centering
   \caption{Tabela de comparação de desempenho entre o código sequencial e o
-    utilizando MPI.}
+    utilizando MPI.}\label{tab:results}
   \vspace{0.3cm}
   \begin{tabular}{||c c c c||}
     \hline
@@ -284,30 +283,30 @@ forma isolada, sem aproveitar o paralelismo.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=.40\textwidth]{figs/speedupxthreads- MPI.png}
+  \includegraphics[width=.5\textwidth]{figs/speedupxthreads_MPI.png}
   \caption{Gráfico de comparação de speedup pelo numero de threads}
-  \label{fig:boxplot_cuda}
+  \label{fig:speedupxthreads}
 \end{figure}
 
-O gráfico ilustra o speedup em função do número de threads em uma aplicação
-paralela com MPI, comparado ao speedup linear ideal e ao desempenho de OMP e
-CUDA. O melhor desempenho é alcançado com 4 threads, enquanto configurações com
-16 e 32 threads mostram redução no speedup devido ao aumento do overhead de
-comunicação. As linhas horizontais destacam o desempenho superior de OMP e,
-especialmente, CUDA, que aproveita melhor o paralelismo em GPUs. O gráfico
-demonstra que o desempenho com MPI é limitado pelo balanceamento entre threads
-e overhead, sendo essencial ajustar o número de threads para maximizar os
-ganhos.
+A Figura~\ref{fig:speedupxthreads} ilustra os resultados do speedup encontrados
+na Tabela~\ref{tab:results}. O melhor desempenho MPI é alcançado com 4
+processos, enquanto configurações com 16 e 32 processos mostram redução no
+speedup devido ao aumento do overhead de comunicação. As linhas horizontais
+destacam o desempenho superior de OMP e, especialmente, CUDA, que aproveita
+melhor o paralelismo em GPUs.
 
 \section{Conclusão}
 O uso de paralelismo com MPI proporciona ganhos significativos de desempenho em
-relação à execução sequencial, especialmente com um número moderado de threads,
-como 4, onde o balanceamento entre carga computacional e overhead é mais
-eficiente. No entanto, o desempenho tende a decrescer com o aumento excessivo
-de threads devido ao aumento do overhead de comunicação e sincronização entre
-processos. Comparando com OMP e CUDA, é evidente que essas tecnologias
-apresentam melhor eficiência para tarefas com alta demanda de paralelismo,
-destacando a capacidade de CUDA em explorar o paralelismo massivo das GPUs.
+relação à execução sequencial, especialmente com um número moderado de
+processos, como 4, onde o balanceamento entre carga computacional e overhead é
+mais eficiente. No entanto, o desempenho tende a decrescer com o aumento
+excessivo de processos devido ao aumento do overhead de comunicação e
+sincronização entre eles. Comparando com OMP e CUDA, é evidente que essas
+tecnologias apresentam melhor eficiência para tarefas com alta demanda de
+paralelismo, considerando o ambiente de execução em um computador doméstico com
+GPU dedicada. Caso contrário, em um ambiente como um \textit{cluster} de
+computadores, MPI seria a melhor opção para distribuir a carga de trabalho
+entre os nós.
 
 \bibliographystyle{sbc}
 \bibliography{sbc-template}
