@@ -1,6 +1,7 @@
 # Build folder
 build/
 figs_heatmap/
+.vscode/
 
 # Prerequisites
 *.d
