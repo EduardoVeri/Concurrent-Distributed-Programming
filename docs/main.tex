@@ -53,11 +53,11 @@
 \section{Introdução}
 
 A contaminação de corpos d'água, tais como lagos e rios, é um grande desafio ao
-meio ambiente e a saúde pública, sendo preciso entender a dispersão do contaminante no
-ambiente para poder realizar qualquer intervenção de
-mitigação. Dessa forma, este trabalho foca na modelagem numérica da
-difusão de poluentes em uma matriz bidimensional, utilizando o método de
-diferenças finitas para aproximar a equação de difusão discreta:
+meio ambiente e a saúde pública, sendo preciso entender a dispersão do
+contaminante no ambiente para poder realizar qualquer intervenção de mitigação.
+Dessa forma, este trabalho foca na modelagem numérica da difusão de poluentes
+em uma matriz bidimensional, utilizando o método de diferenças finitas para
+aproximar a equação de difusão discreta:
 
 \begin{equation}
   C_{i,j}^{t+1} = C_{i,j}^t + D \cdot \Delta t \cdot \left( \frac{C_{i+1,j}^t +
@@ -68,18 +68,17 @@ diferenças finitas para aproximar a equação de difusão discreta:
 
 Nesta equação, $C_{i,j}^t$ representa a concentração do contaminante na célula
 $(i,j)$ no instante $t$, $D$ é o coeficiente de difusão, $\Delta t$ o intervalo
-de tempo discreto e
-$\Delta x$ o espaçamento espacial. O objetivo principal é desenvolver uma
-simulação que modele a difusão de contaminantes aplicando programação paralela
-para acelerar os cálculos e analisar o comportamento dos poluentes ao longo do
-tempo. Serão comparadas as versões sequencial e paralela do algoritmo,
-utilizando OpenMP, CUDA e MPI para explorar o processamento simultâneo em
-múltiplos núcleos e dispositivos. Os resultados serão validados por meio de
-mapas de calor, gráficos de speedup e eficiência, além da comparação das
-matrizes geradas. Este estudo demonstra como técnicas de programação
-concorrente e distribuída podem otimizar simulações numéricas complexas,
-reforçando os conceitos aprendidos na disciplina e demonstrando sua aplicação
-prática no desenvolvimento de soluções eficientes.
+de tempo discreto e $\Delta x$ o espaçamento espacial. O objetivo principal é
+desenvolver uma simulação que modele a difusão de contaminantes aplicando
+programação paralela para acelerar os cálculos e analisar o comportamento dos
+poluentes ao longo do tempo. Serão comparadas as versões sequencial e paralela
+do algoritmo, utilizando OpenMP, CUDA e MPI para explorar o processamento
+simultâneo em múltiplos núcleos e dispositivos. Os resultados serão validados
+por meio de mapas de calor, gráficos de speedup e eficiência, além da
+comparação das matrizes geradas. Este estudo demonstra como técnicas de
+programação concorrente e distribuída podem otimizar simulações numéricas
+complexas, reforçando os conceitos aprendidos na disciplina e demonstrando sua
+aplicação prática no desenvolvimento de soluções eficientes.
 
 \section{Implementação do Algorítimo}
 
@@ -97,29 +96,45 @@ intervalo de tempo $\Delta t$ e o espaçamento espacial $\Delta x$.
 
 \subsection{Código Paralelo em MPI}
 
-A implementação do código foi desenvolvida utilizando MPI (Message Passing Interface) e OpenMP para combinar processamento distribuído e paralelismo em nível de threads. O objetivo principal do código é resolver uma equação diferencial parcial em um grid bidimensional, distribuindo os cálculos entre múltiplos processos MPI e utilizando OpenMP para paralelismo dentro de cada processo.
+A implementação do código foi desenvolvida utilizando MPI (Message Passing
+Interface) e OpenMP para combinar processamento distribuído e paralelismo em
+nível de threads. O objetivo principal do código é resolver uma equação
+diferencial parcial em um grid bidimensional, distribuindo os cálculos entre
+múltiplos processos MPI e utilizando OpenMP para paralelismo dentro de cada
+processo.
 
 O fluxo de execução consiste nas seguintes etapas:
 
 \begin{itemize}
-    \item \textbf{Inicialização (\texttt{MPI\_Init\_thread()}):} Inicia com MPI\_Init\_thread(), definindo o número de processos e threads OpenMP. Cada processo MPI recebe sua parte da matriz global.
-    \item \textbf{Troca de dados entre processo:}Os processos MPI trocam as fronteiras das suas submatrizes com processos vizinhos usando comunicação assíncrona (MPI\_Isend() e MPI\_Irecv()).
-    \item \textbf{Calculo Paralelo:}Cada processo MPI aplica a equação diferencial na sua submatriz, paralelizando o cálculo com OpenMP (\#pragma omp parallel for).
-    \item \textbf{Sincronização global:} A diferença entre os estados da matriz é calculada localmente e reduzida globalmente com MPI\_Allreduce(), garantindo consistência entre os processos.
-     \item \textbf{Finalização:} Após completar todas as iterações, a memória é liberada e MPI\_Finalize() é chamado. O tempo total de execução é registrado e exibido pelo processo mestre.
-
+  \item \textbf{Inicialização (\texttt{MPI\_Init\_thread()}):} Inicia com MPI\_Init\_thread(), definindo o número de processos e threads OpenMP. Cada processo MPI recebe sua parte da matriz global.
+  \item \textbf{Troca de dados entre processo:}Os processos MPI trocam as fronteiras das suas submatrizes com processos vizinhos usando comunicação assíncrona (MPI\_Isend() e MPI\_Irecv()).
+  \item \textbf{Calculo Paralelo:}Cada processo MPI aplica a equação diferencial na sua submatriz, paralelizando o cálculo com OpenMP (\#pragma omp parallel for).
+  \item \textbf{Sincronização global:} A diferença entre os estados da matriz é calculada localmente e reduzida globalmente com MPI\_Allreduce(), garantindo consistência entre os processos.
+  \item \textbf{Finalização:} Após completar todas as iterações, a memória é liberada e MPI\_Finalize() é chamado. O tempo total de execução é registrado e exibido pelo processo mestre.
 
 \end{itemize}
 
-Esse fluxo de execução garante que a carga de trabalho seja distribuída de maneira eficiente entre os processos MPI, enquanto OpenMP melhora o desempenho dentro de cada nó de processamento.
+Esse fluxo de execução garante que a carga de trabalho seja distribuída de
+maneira eficiente entre os processos MPI, enquanto OpenMP melhora o desempenho
+dentro de cada nó de processamento.
 
 \subsection{Interface Python e ferramenta CMake}
 
-Assim como na implementação em OpenMP, o projeto utiliza o CMake para a compilação do código CUDA, facilitando a definição de dependências e o processo de build. A integração com Python é realizada utilizando o módulo \texttt{ctypes}, que permite o carregamento dinâmico da biblioteca CUDA compilada e a chamada de suas funções diretamente em Python.
+Assim como na implementação em OpenMP, o projeto utiliza o CMake para a
+compilação do código CUDA, facilitando a definição de dependências e o processo
+de build. A integração com Python é realizada utilizando o módulo
+\texttt{ctypes}, que permite o carregamento dinâmico da biblioteca CUDA
+compilada e a chamada de suas funções diretamente em Python.
 
-A classe \texttt{CUDADiffusionEquation} implementa a interface Python para a solução da equação de difusão. Essa classe gerencia a inicialização da GPU, a execução dos kernels CUDA e a liberação de recursos, garantindo uma execução eficiente e segura. A interface permite configurar parâmetros como o tamanho da matriz, coeficiente de difusão e as dimensões dos blocos de threads.
+A classe \texttt{CUDADiffusionEquation} implementa a interface Python para a
+solução da equação de difusão. Essa classe gerencia a inicialização da GPU, a
+execução dos kernels CUDA e a liberação de recursos, garantindo uma execução
+eficiente e segura. A interface permite configurar parâmetros como o tamanho da
+matriz, coeficiente de difusão e as dimensões dos blocos de threads.
 
-Com essa integração, é possível comparar diretamente o desempenho entre as implementações sequencial, OpenMP e CUDA, aproveitando a flexibilidade do Python para realizar análises e visualizações dos resultados.
+Com essa integração, é possível comparar diretamente o desempenho entre as
+implementações sequencial, OpenMP e CUDA, aproveitando a flexibilidade do
+Python para realizar análises e visualizações dos resultados.
 
 \section{Resultados}
 
@@ -173,8 +188,8 @@ uniformemente pela matriz, com valores próximos entre si.
 
 A análise de desempenho foi realizada em um computador \textit{desktop} com as
 especificações apresentadas na Tabela~\ref{tab:especificacaoHardware}. Ademais,
-as especificações dos parâmetros do
-problema foram incluídas na Tabela~\ref{tab:especificacaoSimulacao}.
+as especificações dos parâmetros do problema foram incluídas na
+Tabela~\ref{tab:especificacaoSimulacao}.
 
 \begin{table}[ht]
   \centering
@@ -212,9 +227,9 @@ problema foram incluídas na Tabela~\ref{tab:especificacaoSimulacao}.
     \hline
     Coeficiente de Difusão     & 0.1                         \\
     \hline
-    $\Delta t$                         & 0.01                        \\
+    $\Delta t$                 & 0.01                        \\
     \hline
-    $\Delta x$                         & 1.0                         \\
+    $\Delta x$                 & 1.0                         \\
     \hline
   \end{tabular}
   \label{tab:especificacaoSimulacao}
@@ -231,42 +246,65 @@ CUDA correspondente.
   \caption{Tabela de comparação de desempenho entre o código sequencial e o
     utilizando MPI.}
   \vspace{0.3cm}
-  \begin{tabular}{||c c c c c||}
+  \begin{tabular}{||c c c c||}
     \hline
-    Experimento &  N°Threads          & Tempo & STD & SpeedUp \\ [0.5ex]
+    Experimento  & N°Threads & Tempo             & SpeedUp \\ [0.5ex]
     \hline\hline
-    Sequencial         & 1.0 & 124.10    & 0.73 & 1.0     \\
+    Sequencial   & 1.0       & 124.10 $\pm$ 0.73 & 1.0     \\
     \hline
-    MPI          & 1.0  & 23.32  & 1.19 & 1.04   \\
+    OMP          & 4         & 12.28 $\pm$ 1.30  & 1.0     \\
     \hline
-    MPI          & 2.0  & 25.05   & 1.52 & 1.69  \\
+    CUDA (16x16) & ---       & 5.04 $\pm$ 1.02   & 1.0     \\
     \hline
-    MPI         & 4.0 & 124.10    & 1.33 & 2.01     \\
+    MPI          & 1.0       & 23.32  $\pm$ 1.19 & 1.04    \\
     \hline
-    MPI        & 8.0  & 23.32  & 1.34  & 1.70  \\
+    MPI          & 2.0       & 25.05  $\pm$ 1.52 & 1.69    \\
     \hline
-    MPI         & 16.0  & 1.31  & 1.31 & 1.57  \\
+    MPI          & 4.0       & 124.10 $\pm$ 1.33 & 2.01    \\
     \hline
-    MPI       & 32.0 & 124.10    & 1.81 & 1.31    \\
-    \hline    
+    MPI          & 8.0       & 23.32  $\pm$ 1.34 & 1.70    \\
+    \hline
+    MPI          & 16.0      & 1.31   $\pm$ 1.31 & 1.57    \\
+    \hline
+    MPI          & 32.0      & 124.10 $\pm$ 1.81 & 1.31    \\
+    \hline
   \end{tabular}
 \end{table}
 
-O desempenho superior das aplicações com MPI em comparação com o sequencial se deve ao fato de que, enquanto a execução sequencial processa todas as tarefas de forma linear, o MPI divide a carga de trabalho entre vários processos que operam simultaneamente. Isso reduz significativamente o tempo de execução, especialmente para tarefas que podem ser facilmente paralelizadas, ao passo que a execução sequencial enfrenta limitações de desempenho por processar tudo de forma isolada, sem aproveitar o paralelismo.
+O desempenho superior das aplicações com MPI em comparação com o sequencial se
+deve ao fato de que, enquanto a execução sequencial processa todas as tarefas
+de forma linear, o MPI divide a carga de trabalho entre vários processos que
+operam simultaneamente. Isso reduz significativamente o tempo de execução,
+especialmente para tarefas que podem ser facilmente paralelizadas, ao passo que
+a execução sequencial enfrenta limitações de desempenho por processar tudo de
+forma isolada, sem aproveitar o paralelismo.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=.40\textwidth]{docs/figs/speedupxthreads- MPI.png}
+  \includegraphics[width=.40\textwidth]{figs/speedupxthreads- MPI.png}
   \caption{Gráfico de comparação de speedup pelo numero de threads}
   \label{fig:boxplot_cuda}
 \end{figure}
 
-
-O gráfico ilustra o speedup em função do número de threads em uma aplicação paralela com MPI, comparado ao speedup linear ideal e ao desempenho de OMP e CUDA. O melhor desempenho é alcançado com 4 threads, enquanto configurações com 16 e 32 threads mostram redução no speedup devido ao aumento do overhead de comunicação. As linhas horizontais destacam o desempenho superior de OMP e, especialmente, CUDA, que aproveita melhor o paralelismo em GPUs. O gráfico demonstra que o desempenho com MPI é limitado pelo balanceamento entre threads e overhead, sendo essencial ajustar o número de threads para maximizar os ganhos.
+O gráfico ilustra o speedup em função do número de threads em uma aplicação
+paralela com MPI, comparado ao speedup linear ideal e ao desempenho de OMP e
+CUDA. O melhor desempenho é alcançado com 4 threads, enquanto configurações com
+16 e 32 threads mostram redução no speedup devido ao aumento do overhead de
+comunicação. As linhas horizontais destacam o desempenho superior de OMP e,
+especialmente, CUDA, que aproveita melhor o paralelismo em GPUs. O gráfico
+demonstra que o desempenho com MPI é limitado pelo balanceamento entre threads
+e overhead, sendo essencial ajustar o número de threads para maximizar os
+ganhos.
 
 \section{Conclusão}
-O uso de paralelismo com MPI proporciona ganhos significativos de desempenho em relação à execução sequencial, especialmente com um número moderado de threads, como 4, onde o balanceamento entre carga computacional e overhead é mais eficiente. No entanto, o desempenho tende a decrescer com o aumento excessivo de threads devido ao aumento do overhead de comunicação e sincronização entre processos. Comparando com OMP e CUDA, é evidente que essas tecnologias apresentam melhor eficiência para tarefas com alta demanda de paralelismo, destacando a capacidade de CUDA em explorar o paralelismo massivo das GPUs. 
-
+O uso de paralelismo com MPI proporciona ganhos significativos de desempenho em
+relação à execução sequencial, especialmente com um número moderado de threads,
+como 4, onde o balanceamento entre carga computacional e overhead é mais
+eficiente. No entanto, o desempenho tende a decrescer com o aumento excessivo
+de threads devido ao aumento do overhead de comunicação e sincronização entre
+processos. Comparando com OMP e CUDA, é evidente que essas tecnologias
+apresentam melhor eficiência para tarefas com alta demanda de paralelismo,
+destacando a capacidade de CUDA em explorar o paralelismo massivo das GPUs.
 
 \bibliographystyle{sbc}
 \bibliography{sbc-template}
