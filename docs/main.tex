@@ -609,22 +609,24 @@ superior.
 
 \section{Conclusão}
 
-Com a introdução da implementação paralela utilizando CUDA, além da sequência e
-da versão OpenMP previamente analisadas, validou-se a correção dos resultados
-ao longo das diferentes abordagens e examinou-se o impacto do paralelismo no
-tempo de execução. Os experimentos demonstraram que, embora a paralelização com
-CUDA proporcione ganhos significativos em relação ao código sequencial, podem
-existir limitações na escalabilidade, que são decorrentes de \textit{overheads}
-de comunicação entre a CPU e a GPU, latências de memória e restrições
-arquiteturais do próprio hardware gráfico.
+Com as implementações paralelas utilizando CUDA, MPI e OpenMP, além da versão
+sequencial, validou-se a exatidão dos resultados e analisou-se o impacto do
+paralelismo no tempo de execução. A estratégia com CUDA explorou o potencial
+massivo das GPUs para reduzir significativamente os tempos de processamento,
+apesar dos desafios de comunicação entre CPU e GPU e das limitações
+arquiteturais que podem afetar sua escalabilidade. Em contrapartida, a
+abordagem com MPI mostrou-se eficaz na distribuição da carga entre nós em
+ambientes distribuídos, mesmo considerando o custo adicional de comunicação,
+enquanto o OpenMP proporcionou ganhos expressivos em sistemas multicore, apesar
+da limitação imposta pelo número de núcleos lógicos.
 
-Dessa forma, o estudo evidencia não apenas as vantagens práticas da
-paralelização em termos de desempenho e eficiência em simulações numéricas, mas
-também ressalta a importância de se compreender os desafios inerentes às
-diferentes estratégias paralelas. A experiência com CUDA complementa os
-conceitos fundamentais aprendidos em programação concorrente e distribuída,
-oferecendo percepções valiosas sobre a aplicabilidade e os limites da
-aceleração por GPU em contextos computacionais exigentes.
+Assim, o estudo ressalta a importância de compreender as peculiaridades de
+cada técnica paralela. As GPUs destacam-se em simulações intensivas, MPI
+possibilita a expansão dos recursos computacionais em clusters e o OpenMP se
+mostra eficiente em ambientes multicore. Essa combinação de abordagens oferece
+uma visão abrangente dos desafios e benefícios da aceleração por hardware
+paralelo, contribuindo para a otimização de algoritmos numéricos em contextos
+computacionais exigentes.
 
 \bibliographystyle{sbc}
 \bibliography{sbc-template}
