@@ -20,7 +20,60 @@
 
 \usepackage[brazil]{babel}
 \usepackage[utf8]{inputenc}
-\usepackage{float}
+
+\usepackage{listings}
+\usepackage{xcolor}
+
+% Definição de cores personalizadas
+\definecolor{mygreen}{rgb}{0,0.6,0}        % Para comentários
+\definecolor{mygray}{rgb}{0.5,0.5,0.5}       % Para números de linha
+\definecolor{mymauve}{rgb}{0.58,0,0.82}       % Para strings
+\definecolor{myblue}{rgb}{0,0,0.8}            % Para palavras-chave
+\definecolor{lightgray}{rgb}{0.95,0.95,0.95}  % Fundo dos códigos
+
+% Configuração padrão para todos os códigos
+\lstset{
+  backgroundcolor=\color{lightgray},
+  basicstyle=\ttfamily\footnotesize,
+  breaklines=true,
+  captionpos=b,
+  numbers=left,
+  numberstyle=\tiny\color{mygray},
+  frame=single,
+  keywordstyle=\color{myblue}\bfseries,
+  commentstyle=\color{mygreen}\itshape,
+  stringstyle=\color{mymauve},
+  tabsize=4,
+  showstringspaces=false,
+  aboveskip=10pt,
+  belowskip=5pt
+}
+% Estilo para código em C
+\lstdefinestyle{CStyle}{
+  language=C,
+  % Outras opções específicas para C podem ser adicionadas aqui
+}
+
+% Definindo uma linguagem para CUDA baseada em C++
+\lstdefinelanguage{CUDA}[]{C++}{
+  morekeywords={__global__, __device__, __shared__, __host__},
+  % Caso necessário, adicione mais palavras-chave ou opções específicas
+}
+
+% Estilo para código em CUDA
+\lstdefinestyle{CUDAStyle}{
+  language=CUDA,
+  % Outras configurações específicas para CUDA podem ser adicionadas aqui
+}
+
+% Estilo para código em Python
+\lstdefinestyle{PythonStyle}{
+  language=Python,
+  morekeywords=[2]{SequentialDiffusionEquation,with,OMPdiffusionEquation,CUDADiffusionEquation},
+  % Outras opções específicas para Python podem ser adicionadas aqui
+}
+
+\renewcommand{\lstlistingname}{Código}
 
 \sloppy
 
@@ -94,29 +147,230 @@ da matriz. A atualização de cada célula depende da média das concentrações
 seus vizinhos imediatos e de parâmetros físicos como coeficiente de difusão, o
 intervalo de tempo $\Delta t$ e o espaçamento espacial $\Delta x$.
 
+\begin{lstlisting}[style=CStyle, caption={Código sequencial da para cálculo da difusão, que será utilizado como base para as demais implementações.}, label={cod:seq}]
+double sequential_diff_eq(double **C, double **C_new, DiffEqArgs *args) {
+    int N = args->N;
+    double D = args->D;
+    double DELTA_T = args->DELTA_T;
+    double DELTA_X = args->DELTA_X;
+    double difmedio = 0.;
+
+    for (int i = 1; i < N - 1; i++) {
+        for (int j = 1; j < N - 1; j++) {
+            C_new[i][j] = C[i][j] + D * DELTA_T * ((C[i + 1][j] + C[i - 1][j] + C[i][j + 1] + C[i][j - 1] - 4 * C[i][j]) / (DELTA_X * DELTA_X));
+            difmedio += fabs(C_new[i][j] - C[i][j]);
+        }
+    }
+
+    return difmedio / ((N - 2) * (N - 2));
+}
+\end{lstlisting}
+
+\subsection{Código Paralelo em OpenMP}
+
+A implementação paralela utiliza a biblioteca Open Multi-Processing (OpenMP)
+para distribuir a carga de trabalho entre múltiplos núcleos, mantendo a lógica
+do algoritmo sequencial. Essa distribuição é realizada através de diretivas
+específicas inseridas na estrutura do código original.
+
+\begin{lstlisting}[style=CStyle, caption={Implementação paralelizada utilizando a biblioteca OpenMP.}, label={cod:omp}]
+double omp_diff_eq(double **C, double **C_new, DiffEqArgs *args) {
+    int N = args->N;
+    double D = args->D;
+    double DELTA_T = args->DELTA_T;
+    double DELTA_X = args->DELTA_X;
+    double difmedio = 0.;
+
+#pragma omp parallel for collapse(2) reduction(+ : difmedio)
+    for (int i = 1; i < N - 1; i++) {
+        for (int j = 1; j < N - 1; j++) {
+            C_new[i][j] = C[i][j] + D * DELTA_T * ((C[i + 1][j] + C[i - 1][j] + C[i][j + 1] + C[i][j - 1] - 4 * C[i][j]) / (DELTA_X * DELTA_X));
+            difmedio += fabs(C_new[i][j] - C[i][j]);
+        }
+    }
+
+    return difmedio / ((N - 2) * (N - 2));
+}
+\end{lstlisting}
+
+\begin{description}
+  \item[\texttt{\#pragma omp parallel for collapse(2)}:]
+        Esta diretiva divide automaticamente os laços de cálculo entre diversos \textit{threads}. Cada \textit{thread} é responsável por atualizar uma parte distinta da matriz, permitindo que várias seções do cálculo sejam processadas simultaneamente. O parâmetro \texttt{collapse(2)} indica que os dois laços aninhados serão combinados para otimizar o paralelismo.
+
+  \item[\texttt{\#pragma omp parallel for reduction(+:difmedio) collapse(2)}:]
+        Assim como a diretiva anterior, esta instrução paraleliza as iterações do laço, porém com o acréscimo de uma operação de redução. Essa redução garante que o somatório, utilizado para monitorar a convergência do algoritmo, seja realizado de forma segura entre os diferentes \textit{threads}.
+
+  \item[\texttt{omp\_set\_num\_threads(int num\_threads)}:]
+        Esta função permite configurar dinamicamente o número de \textit{threads} a serem utilizados, sendo essencial para testes e análises de desempenho.
+\end{description}
+
+\subsection{Código Paralelo em CUDA}
+
+Nesta implementação, o algoritmo de difusão foi otimizado para execução em
+GPUs, aproveitando a arquitetura CUDA (Compute Unified Device Architecture). A
+abordagem distribui o cálculo da atualização das células da matriz de
+concentração entre milhares de \texttt{threads}, onde cada uma processa
+individualmente uma célula da matriz utilizando o método de diferenças finitas.
+Essa estratégia maximiza a paralelização, resultando em desempenho superior
+quando comparada às implementações sequencial e mesmo às paralelas em CPU.
+
+\begin{lstlisting}[style=CUDAStyle, caption={Implementação paralelizada utilizando CUDA.}, label={cod:cuda}]
+__global__ void diffusion_kernel(double *C, double *C_new, double *block_sums, int N, double D, double DELTA_T, double DELTA_X) {
+    extern __shared__ double sdata[]; 
+
+    int i = blockIdx.y * blockDim.y + threadIdx.y + 1;
+    int j = blockIdx.x * blockDim.x + threadIdx.x + 1;
+
+    double diff_val = 0.0f;
+
+    if (i < N - 1 && j < N - 1) {
+        int idx = i * N + j;
+        double up = C[(i - 1) * N + j];
+        double down = C[(i + 1) * N + j];
+        double left = C[i * N + (j - 1)];
+        double right = C[i * N + (j + 1)];
+        double center = C[idx];
+
+        C_new[idx] = center + D * DELTA_T * ((up + down + left + right - 4 * center) / (DELTA_X * DELTA_X));
+
+        diff_val = fabs(C_new[idx] - center);
+    }
+
+    int tid = threadIdx.y * blockDim.x + threadIdx.x;
+    sdata[tid] = diff_val;
+    __syncthreads();
+
+    for (unsigned int s = (blockDim.x * blockDim.y) / 2; s > 32; s >>= 1) {
+        if (tid < s) {
+            sdata[tid] += sdata[tid + s];
+        }
+        __syncthreads();
+    }
+
+    if (tid < 32) {
+        volatile double *vsmem = sdata;
+        vsmem[tid] += vsmem[tid + 32];
+        vsmem[tid] += vsmem[tid + 16];
+        vsmem[tid] += vsmem[tid + 8];
+        vsmem[tid] += vsmem[tid + 4];
+        vsmem[tid] += vsmem[tid + 2];
+        vsmem[tid] += vsmem[tid + 1];
+    }
+
+    if (tid == 0) {
+        block_sums[blockIdx.y * gridDim.x + blockIdx.x] = sdata[0];
+    }
+}
+\end{lstlisting}
+
+O kernel \texttt{diffusion\_kernel} é responsável por calcular a nova
+concentração de cada célula com base nos valores dos seus vizinhos imediatos,
+aplicando a fórmula de difusão que incorpora os parâmetros de difusão, tempo e
+espaço. Este kernel é lançado em uma grade (\textit{grid}) composta por blocos
+de \texttt{threads}, cujas dimensões podem ser configuradas dinamicamente
+através da função \texttt{set\_block\_dimensions}. A utilização de memória
+compartilhada (\texttt{\_\_shared\_\_}) acelera a acumulação dos valores
+diferenciais, facilitando a verificação da convergência do algoritmo.
+
+\textbf{Etapas do Fluxo de Execução:}
+\begin{enumerate}
+  \item \textbf{Inicialização (\texttt{cuda\_init}):}
+        Aloca a memória necessária na GPU e transfere os dados iniciais da CPU para a memória do dispositivo.
+  \item \textbf{Execução do Kernel (\texttt{cuda\_diff\_eq}):}
+        Lança o kernel que atualiza os valores da matriz e calcula a diferença média entre iterações.
+  \item \textbf{Recuperação dos Dados (\texttt{cuda\_get\_result}):}
+        Transfere os resultados computados na GPU de volta para a CPU.
+  \item \textbf{Finalização (\texttt{cuda\_finalize}):}
+        Libera a memória previamente alocada na GPU.
+\end{enumerate}
+
+Para facilitar a implementação do algoritmo \textit{stencil} na GPU, a matriz
+bidimensional foi convertida em um vetor unidimensional, onde as linhas são
+concatenadas. Essa abordagem simplifica o acesso à memória, exigindo apenas um
+cálculo cuidadoso dos índices para que cada \textit{thread} acesse o elemento
+correto.
+
+Para a operação de redução, cada \textit{thread} inicialmente armazena sua
+contribuição em memória compartilhada. Em seguida, o kernel realiza uma soma
+hierárquica, agregando os valores de forma progressiva até que reste um único
+valor por bloco. Esse resultado final é copiado para a memória global,
+possibilitando o cálculo da diferença média total já na CPU e,
+consequentemente, a verificação da convergência do algoritmo.
+
+Adicionalmente, a função \texttt{set\_block\_dimensions} possibilita o ajuste
+das dimensões dos blocos de \textit{threads}, permitindo a experimentação com
+diferentes granularidades de paralelismo para um balanceamento eficiente da
+carga entre os multiprocessadores da GPU.
+
 \subsection{Código Paralelo em MPI}
 
-A implementação do código foi desenvolvida utilizando MPI (Message Passing
+O último código paralelo foi desenvolvido utilizando MPI (Message Passing
 Interface) e OpenMP para combinar processamento distribuído e paralelismo em
-nível de threads. O objetivo principal do código é resolver uma equação
-diferencial parcial em um grid bidimensional, distribuindo os cálculos entre
-múltiplos processos MPI e utilizando OpenMP para paralelismo dentro de cada
-processo.
+nível de threads. O MPI é uma biblioteca de comunicação que permite a troca de
+dados entre processos independentes em um ambiente de computação distribuída.
+Ele é perfeito para aplicações que exigem aplicações que exigem alto desempenho
+e escalabilidade, possibilitando a comunicação eficiente entre processos
+distribuídos em diferentes nós de um cluster. A combinação de MPI e OpenMP
+permite a execução paralela em múltiplos núcleos de processamento em cada nó.
 
-O fluxo de execução consiste nas seguintes etapas:
-
-\begin{itemize}
+\textbf{Etapas do Fluxo de Execução:}
+\begin{enumerate}
   \item \textbf{Inicialização:} Inicia com MPI\_Init\_thread(), definindo o número de processos e threads OpenMP. Cada processo MPI recebe sua parte da matriz global.
   \item \textbf{Troca de dados entre processo:} Os processos MPI trocam as fronteiras das suas submatrizes com processos vizinhos usando comunicação assíncrona (MPI\_Isend() e MPI\_Irecv()).
   \item \textbf{Calculo Paralelo:} Cada processo MPI aplica a equação diferencial na sua submatriz, paralelizando o cálculo com OpenMP (\#pragma omp parallel for).
   \item \textbf{Sincronização global:} A diferença entre os estados da matriz é calculada localmente e reduzida globalmente com MPI\_Allreduce(), garantindo consistência entre os processos.
   \item \textbf{Finalização:} Após completar todas as iterações, a memória é liberada e MPI\_Finalize() é chamado. O tempo total de execução é registrado e exibido pelo processo mestre.
 
-\end{itemize}
+\end{enumerate}
 
 Esse fluxo de execução garante que a carga de trabalho seja distribuída de
 maneira eficiente entre os processos MPI, enquanto OpenMP melhora o desempenho
 dentro de cada nó de processamento.
+
+\begin{lstlisting}[style=CStyle, caption={Implementação paralelizada utilizando MPI.}, label={cod:mpi}]
+double mpi_omp_diff_eq(double **C, double **C_new, DiffEqArgs *args,
+                       int localN, int N, int rank, int size) {
+    double D = args->D;
+    double DELTA_T = args->DELTA_T;
+    double DELTA_X = args->DELTA_X;
+    double difmedio_local = 0.0;
+
+    MPI_Request reqs[4];
+    int req_count = 0;
+
+    if (rank > 0) {
+        MPI_Irecv(C[0], N, MPI_DOUBLE, rank - 1, 0, MPI_COMM_WORLD, &reqs[req_count++]);
+        MPI_Isend(C[1], N, MPI_DOUBLE, rank - 1, 1, MPI_COMM_WORLD, &reqs[req_count++]);
+    }
+
+    if (rank < size - 1) {
+        MPI_Irecv(C[localN + 1], N, MPI_DOUBLE, rank + 1, 1, MPI_COMM_WORLD, &reqs[req_count++]);
+        MPI_Isend(C[localN], N, MPI_DOUBLE, rank + 1, 0, MPI_COMM_WORLD, &reqs[req_count++]);
+    }
+
+    MPI_Waitall(req_count, reqs, MPI_STATUSES_IGNORE);
+
+    double local_sum = 0.0;
+#pragma omp parallel for collapse(2) reduction(+ : local_sum)
+    for (int i = 1; i <= localN; i++) {
+        for (int j = 1; j < N - 1; j++) {
+            C_new[i][j] =
+                C[i][j] +
+                D * DELTA_T *
+                    ((C[i + 1][j] + C[i - 1][j] + C[i][j + 1] + C[i][j - 1] - 4.0 * C[i][j]) / (DELTA_X * DELTA_X));
+
+            local_sum += fabs(C_new[i][j] - C[i][j]);
+        }
+    }
+
+    double global_sum = 0.0;
+    MPI_Allreduce(&local_sum, &global_sum, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+    double difmedio_global = global_sum / ((N - 2) * (N - 2));
+
+    return difmedio_global;
+}
+\end{lstlisting}
 
 \subsection{Interface Python e ferramenta CMake}
 
@@ -137,6 +391,47 @@ facilidade de uso do Python, possibilitando a configuração de parâmetros como
 tamanho da matriz, coeficiente de difusão e dimensões dos blocos de
 \textit{threads}.
 
+\begin{lstlisting}[style=PythonStyle, caption={Implementação paralelizada utilizando CUDA.}, label={cod:pythonlib}]
+from diffusion import (
+    SequentialDiffusionEquation,
+    OMPdiffusionEquation,
+    CUDADiffusionEquation,
+)
+
+lib_path = "./build/libDiffusionEquation.so"
+
+with SequentialDiffusionEquation(
+    library_path=lib_path, N=200, D=0.05, DELTA_T=0.02, DELTA_X=1.0,
+    initial_concentration_points={(100, 100): 1.0},
+) as seq_solver:
+    for _ in range(1000): # Perform 1000 simulation steps
+        diff_seq = seq_solver.step()  # Execute seq C code step
+    
+    value_at_center = seq_solver.concentration_matrix[100][100]
+    print(f"Sequential diffusion value at center: {value_at_center}")
+
+with OMPdiffusionEquation(
+    library_path=lib_path, N=200, D=0.05, DELTA_T=0.02, DELTA_X=1.0,
+    initial_concentration_points={(100, 100): 1.0},
+) as omp_solver:
+    for _ in range(1000):
+        diff_omp = omp_solver.step()  # Execute OpenMP step
+    
+    value_at_center = omp_solver.concentration_matrix[100][100]
+    print(f"OMP diffusion value at center: {value_at_center}")
+
+with CUDADiffusionEquation(
+    library_path=lib_path, N=200, D=0.05, DELTA_T=0.02, DELTA_X=1.0,
+    initial_concentration_points={(100, 100): 1.0},
+) as cuda_solver:
+    for _ in range(1000):
+        diff_cuda = cuda_solver.step()  # Execute cuda step
+    
+    cuda_solver.get_result() # Get the result from device to host
+    value_at_center = cuda_solver.concentration_matrix[100][100]
+    print(f"CUDA diffusion value at center: {value_at_center}")
+\end{lstlisting}
+
 \section{Resultados}
 
 Nesta seção, apresentamos os resultados obtidos de nossa implementação.
@@ -147,7 +442,7 @@ ilustramos, por meio de mapas de calor, a atualização dos valores da matriz ao
 longo do tempo. Por fim, realizamos uma análise comparativa dos tempos médios
 de execução e \textit{speedup} entre as duas versões.
 
-\subsection{Validação da Implementação}
+\subsection{Validação da Implementação - Numérico}
 
 Para assegurar a correção das duas implementações, verificamos em cada iteração
 se os valores presentes em cada célula da matriz são idênticos. Dessa forma, o
@@ -160,26 +455,25 @@ corrida, uma vez que a escrita não é realizada na mesma região de memória da
 leituras, tornando o processamento de cada célula pelas \textit{threads}
 independente.
 
-\subsection{Validação da Implementação}
+\subsection{Validação da Implementação - Ilustrativo}
 
 Para ilustrar o funcionamento da implementação, foram gerados mapas de calor,
-representado pela Figura \ref{fig:heatmap}, nos quais cada ponto de uma matriz
-50x50 é representado por uma cor distinta. Cores escuras correspondem a valores
-próximos de um, indicando alta concentração do contaminante, enquanto cores
-claras representam valores próximos de zero, indicando baixa presença de
+representado pela Figura~\ref{fig:heatmap}, nos quais cada ponto de uma matriz
+50$\times$50 é representado por uma cor distinta. Cores escuras correspondem a
+valores próximos de um, indicando alta concentração do contaminante, enquanto
+cores claras representam valores próximos de zero, indicando baixa presença de
 contaminação.
 
 \begin{figure}[ht]
   \centering
-  \includegraphics[width=.55\textwidth]{figs/heatmap.png}
-  \caption{Mapa de calor em quatro instantes distintos da simulação.}
-  \label{fig:heatmap}
+  \includegraphics[width=.45\textwidth]{figs/heatmap.png}
+  \caption{Mapa de calor em quatro instantes distintos da simulação.}\label{fig:heatmap}
 \end{figure}
 
 Analisando a progressão dos mapas de calor, observamos que o comportamento faz
 sentido no contexto da solução proposta. Inicialmente, o contaminante é
 adicionado com alta concentração nas diagonais e no centro da matriz,
-evidenciado pelas regiões azuis escuros. Com o avanço das iterações, o
+evidenciado pelas regiões azuis-escuros. Com o avanço das iterações, o
 contaminante começa a se difundir para as regiões adjacentes, aumentando
 gradativamente a luminosidade nessas áreas e diminuindo nos pontos de
 concentração inicial. Na última iteração, a concentração se distribui
@@ -200,41 +494,42 @@ executada com variações no número de threads, porém mantendo em apenas uma
   \vspace{0.3cm}
   \begin{tabular}{||c c||}
     \hline
-    Especificações      & Detalhes                  \\ [0.5ex]
+    Especificações      & Detalhes                         \\ [0.5ex]
     \hline\hline
-    Processador         & Intel i7--4790 @ 3.60GHz  \\
+    Processador         & Intel i7--7500U @ 2.7GHz--3.5GHz \\
     \hline
-    Núcleos / Lógicos   & 4 / 8                     \\
+    Núcleos / Lógicos   & 2 / 4                            \\
     \hline
-    Memória RAM         & 10 GB                     \\
+    Memória RAM         & 10 GB                            \\
     \hline
-    Sistema Operacional & Ubuntu 22.04.05 (via WSL) \\
+    Sistema Operacional & Ubuntu 22.04.05 (via WSL)        \\
     \hline
-  \end{tabular}
-  \label{tab:especificacaoHardware}
+    GPU                 & NVIDIA GeForce 940MX - 2GB VRAM  \\
+    \hline
+  \end{tabular}\label{tab:especificacaoHardware}
 \end{table}
 
 \begin{table}[ht]
   \centering
-  \caption{Tabela de especificação da Simulação}\label{tab:especificacaoSimulacao}
+  \caption{Tabela de especificação da Simulação}
   \vspace{0.3cm}
   \begin{tabular}{||c c||}
     \hline
-    Especificações             & Detalhes                    \\ [0.5ex]
+    Especificações                    & Detalhes                    \\ [0.5ex]
     \hline\hline
-    Dimensão da Matriz (N x N) & 2000 x 2000                 \\
+    Dimensão da Matriz (N $\times$ N) & 2000 $\times$ 2000          \\
     \hline
-    Número de Iterações        & 500                         \\
+    Número de Iterações               & 500                        \\
     \hline
-    Distribuição Inicial       & Alta concentração no centro \\
+    Distribuição Inicial              & Alta concentração no centro \\
     \hline
-    Coeficiente de Difusão     & 0.1                         \\
+    Coeficiente de Difusão            & 0.1                         \\
     \hline
-    $\Delta t$                 & 0.01                        \\
+    $\Delta t$                        & 0.01                        \\
     \hline
-    $\Delta x$                 & 1.0                         \\
+    $\Delta x$                        & 1.0                         \\
     \hline
-  \end{tabular}
+  \end{tabular}\label{tab:especificacaoSimulacao}
 \end{table}
 
 Para obter valores mais consistentes e minimizar influências externas, como
@@ -246,67 +541,92 @@ CUDA correspondente.
 \begin{table}[ht]
   \centering
   \caption{Tabela de comparação de desempenho entre o código sequencial e o
-    utilizando MPI.}\label{tab:results}
+    utilizando MPI.}\label{tab:Resultados}
   \vspace{0.3cm}
-  \begin{tabular}{||c c c c||}
+  \begin{tabular}{||c c c||}
     \hline
-    Experimento  & N° Threads/Processos & Tempo             & SpeedUp \\ [0.5ex]
+    Experimento   & Tempo            & SpeedUp \\ [0.5ex]
     \hline\hline
-    Sequencial   & 1 T                  & 124.10 $\pm$ 0.73 & 1.0     \\
+    Sequencial    & 27.23 $\pm$ 2.36 & 1.0     \\
     \hline
-    OMP          & 4 T                  & 12.28 $\pm$ 1.30  & 2.15     \\
+    OMP (1T)      & 26.33 $\pm$ 1.09 & 1.03    \\
     \hline
-    CUDA (16x16) & ---                  & 5.04 $\pm$ 1.02   & 5.24     \\
+    OMP (2T)      & 16.58 $\pm$ 1.72 & 1.64    \\
     \hline
-    MPI          & 1T/1P                & 25.39 $\pm$ 1.19  & 1.04    \\
+    OMP (4T)      & 13.34 $\pm$ 1.52 & 2.04    \\
     \hline
-    MPI          & 1T/2P                & 15.67 $\pm$ 1.52  & 1.69    \\
+    OMP (8T)      & 13.38 $\pm$ 1.54 & 2.35    \\
     \hline
-    MPI          & 1T/4P                & 14.14 $\pm$ 1.33  & 2.01    \\
+    OMP (16T)     & 13.75 $\pm$ 1.42 & 1.98    \\
     \hline
-    MPI          & 1T/8P                & 15.52 $\pm$ 1.34  & 1.70    \\
+    OMP (32T)     & 13.96 $\pm$ 1.46 & 1.95    \\
     \hline
-    MPI          & 1T/16P               & 16.83 $\pm$ 1.31  & 1.57    \\
+    MPI (1P)      & 25.47 $\pm$ 1.64 & 1.07    \\
     \hline
-    MPI          & 1T/32P               & 20.19 $\pm$ 1.81  & 1.31    \\
+    MPI (2P)      & 16.51 $\pm$ 1.61 & 1.65    \\
+    \hline
+    MPI (4P)      & 13.53 $\pm$ 1.52 & 2.01    \\
+    \hline
+    MPI (8P)      & 15.88 $\pm$ 1.71 & 1.71    \\
+    \hline
+    MPI (16P)     & 18.03 $\pm$ 1.40 & 1.51    \\
+    \hline
+    MPI (32P)     & 19.60 $\pm$ 1.51 & 1.39    \\
+    \hline
+    CUDA (16, 16) & 5.23 $\pm$ 1.04  & 5.21    \\
     \hline
   \end{tabular}
 \end{table}
 
-O desempenho superior das aplicações com MPI em comparação com o sequencial se
-deve ao fato de que, enquanto a execução sequencial processa todas as tarefas
-de forma linear, o MPI divide a carga de trabalho entre vários processos que
-operam simultaneamente. Isso reduz significativamente o tempo de execução,
-especialmente para tarefas que podem ser facilmente paralelizadas, ao passo que
-a execução sequencial enfrenta limitações de desempenho por processar tudo de
-forma isolada, sem aproveitar o paralelismo.
-
-\begin{figure}[H]
+\begin{figure}[ht]
   \centering
-  \includegraphics[width=.5\textwidth]{figs/speedupxthreads_MPI.png}
-  \caption{Gráfico de comparação de speedup pelo numero de threads}
-  \label{fig:speedupxthreads}
+  \includegraphics[width=.55\textwidth]{figs/speedupxthreads.png}
+  \caption{Gráfico de Speedup para experimentos da Tabela~\ref{tab:Resultados}.}\label{fig:speedupxthread}
 \end{figure}
 
-A Figura~\ref{fig:speedupxthreads} ilustra os resultados do speedup encontrados
-na Tabela~\ref{tab:results}. O melhor desempenho MPI é alcançado com 4
-processos, enquanto configurações com 16 e 32 processos mostram redução no
-speedup devido ao aumento do overhead de comunicação. As linhas horizontais
-destacam o desempenho superior de OMP e, especialmente, CUDA, que aproveita
-melhor o paralelismo em GPUs.
+Os resultados apresentados na Tabela~\ref{tab:Resultados} estão em conformidade
+com as expectativas, considerando as especificações de hardware descritas na
+Tabela~\ref{tab:especificacaoHardware}. Dentre as abordagens testadas, a
+implementação em CUDA destacou-se por alcançar o melhor desempenho. Esse
+resultado se deve, principalmente, à capacidade das GPUs de realizar um
+paralelismo massivo – permitindo a execução simultânea de centenas de
+\textit{threads} –, bem como à gestão eficiente da memória. Em contrapartida,
+as implementações com OpenMP e MPI esbarram nas limitações impostas pelos 4
+núcleos lógicos da CPU. Enquanto o OpenMP consegue mitigar essa restrição com a
+criação de \textit{threads} adicionais sem perdas expressivas de desempenho, o
+MPI sofre com um \textit{overhead} considerável decorrente da criação de novos
+processos e da comunicação via troca de mensagens.
+
+A eficiência do processamento paralelo evidenciada pela abordagem CUDA ressalta
+o potencial das GPUs para tarefas que exigem cálculos intensivos, como os
+algoritmos de aprendizado de máquina. Contudo, em simulações de menor escala os
+benefícios podem ser menos significativos, pois os custos de alocação,
+transferência e gerenciamento dos dados na GPU podem superar as vantagens do
+paralelismo. Além disso, embora o MPI apresente limitações em ambientes com
+poucos núcleos lógicos, sua utilização em \textit{clusters} distribuídos pode
+explorar um paralelismo massivo, resultando em desempenho potencialmente
+superior.
 
 \section{Conclusão}
-O uso de paralelismo com MPI proporciona ganhos significativos de desempenho em
-relação à execução sequencial, especialmente com um número moderado de
-processos, como 4, onde o balanceamento entre carga computacional e overhead é
-mais eficiente. No entanto, o desempenho tende a decrescer com o aumento
-excessivo de processos devido ao aumento do overhead de comunicação e
-sincronização entre eles. Comparando com OMP e CUDA, é evidente que essas
-tecnologias apresentam melhor eficiência para tarefas com alta demanda de
-paralelismo, considerando o ambiente de execução em um computador doméstico com
-GPU dedicada. Caso contrário, em um ambiente como um \textit{cluster} de
-computadores, MPI seria a melhor opção para distribuir a carga de trabalho
-entre os nós.
+
+Com as implementações paralelas utilizando CUDA, MPI e OpenMP, além da versão
+sequencial, validou-se a exatidão dos resultados e analisou-se o impacto do
+paralelismo no tempo de execução. A estratégia com CUDA explorou o potencial
+massivo das GPUs para reduzir significativamente os tempos de processamento,
+apesar dos desafios de comunicação entre CPU e GPU e das limitações
+arquiteturais que podem afetar sua escalabilidade. Em contrapartida, a
+abordagem com MPI mostrou-se eficaz na distribuição da carga entre nós em
+ambientes distribuídos, mesmo considerando o custo adicional de comunicação,
+enquanto o OpenMP proporcionou ganhos expressivos em sistemas multicore, apesar
+da limitação imposta pelo número de núcleos lógicos.
+
+Assim, o estudo ressalta a importância de compreender as peculiaridades de
+cada técnica paralela. As GPUs destacam-se em simulações intensivas, MPI
+possibilita a expansão dos recursos computacionais em clusters e o OpenMP se
+mostra eficiente em ambientes multicore. Essa combinação de abordagens oferece
+uma visão abrangente dos desafios e benefícios da aceleração por hardware
+paralelo, contribuindo para a otimização de algoritmos numéricos em contextos
+computacionais exigentes.
 
 \bibliographystyle{sbc}
 \bibliography{sbc-template}
