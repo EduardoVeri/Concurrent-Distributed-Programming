@@ -304,6 +304,29 @@ carga entre os multiprocessadores da GPU.
 
 \subsection{Código Paralelo em MPI}
 
+O último código paralelo foi desenvolvido utilizando MPI (Message Passing
+Interface) e OpenMP para combinar processamento distribuído e paralelismo em
+nível de threads. O MPI é uma biblioteca de comunicação que permite a troca de
+dados entre processos independentes em um ambiente de computação distribuída.
+Ele é perfeito para aplicações que exigem aplicações que exigem alto desempenho
+e escalabilidade, possibilitando a comunicação eficiente entre processos
+distribuídos em diferentes nós de um cluster. A combinação de MPI e OpenMP
+permite a execução paralela em múltiplos núcleos de processamento em cada nó.
+
+\textbf{Etapas do Fluxo de Execução:}
+\begin{enumerate}
+  \item \textbf{Inicialização:} Inicia com MPI\_Init\_thread(), definindo o número de processos e threads OpenMP. Cada processo MPI recebe sua parte da matriz global.
+  \item \textbf{Troca de dados entre processo:} Os processos MPI trocam as fronteiras das suas submatrizes com processos vizinhos usando comunicação assíncrona (MPI\_Isend() e MPI\_Irecv()).
+  \item \textbf{Calculo Paralelo:} Cada processo MPI aplica a equação diferencial na sua submatriz, paralelizando o cálculo com OpenMP (\#pragma omp parallel for).
+  \item \textbf{Sincronização global:} A diferença entre os estados da matriz é calculada localmente e reduzida globalmente com MPI\_Allreduce(), garantindo consistência entre os processos.
+  \item \textbf{Finalização:} Após completar todas as iterações, a memória é liberada e MPI\_Finalize() é chamado. O tempo total de execução é registrado e exibido pelo processo mestre.
+
+\end{enumerate}
+
+Esse fluxo de execução garante que a carga de trabalho seja distribuída de
+maneira eficiente entre os processos MPI, enquanto OpenMP melhora o desempenho
+dentro de cada nó de processamento.
+
 \begin{lstlisting}[style=CStyle, caption={Implementação paralelizada utilizando MPI.}, label={cod:mpi}]
 double mpi_omp_diff_eq(double **C, double **C_new, DiffEqArgs *args,
                        int localN, int N, int rank, int size) {
@@ -377,8 +400,6 @@ from diffusion import (
 
 lib_path = "./build/libDiffusionEquation.so"
 
-# Context manager is not necessary for sequential and OMP
-# solver, but it is recommended to use it even for them
 with SequentialDiffusionEquation(
     library_path=lib_path, N=200, D=0.05, DELTA_T=0.02, DELTA_X=1.0,
     initial_concentration_points={(100, 100): 1.0},
@@ -399,8 +420,6 @@ with OMPdiffusionEquation(
     value_at_center = omp_solver.concentration_matrix[100][100]
     print(f"OMP diffusion value at center: {value_at_center}")
 
-# Context manager is necessary for CUDA solver
-# You also can free them manually by calling the finalize method
 with CUDADiffusionEquation(
     library_path=lib_path, N=200, D=0.05, DELTA_T=0.02, DELTA_X=1.0,
     initial_concentration_points={(100, 100): 1.0},
@@ -447,7 +466,7 @@ contaminação.
 
 \begin{figure}[ht]
   \centering
-  \includegraphics[width=.5\textwidth]{figs/heatmap.png}
+  \includegraphics[width=.4\textwidth]{figs/heatmap.png}
   \caption{Mapa de calor em quatro instantes distintos da simulação.}\label{fig:heatmap}
 \end{figure}
 
@@ -522,7 +541,7 @@ CUDA correspondente.
 \begin{table}[ht]
   \centering
   \caption{Tabela de comparação de desempenho entre o código sequencial e o
-    utilizando MPI.}\label{tab:results}
+    utilizando MPI.}\label{tab:Resultados}
   \vspace{0.3cm}
   \begin{tabular}{||c c c||}
     \hline
@@ -561,7 +580,7 @@ CUDA correspondente.
 
 \begin{figure}[ht]
   \centering
-  \includegraphics[width=.7\textwidth]{figs/speedupxthreads.png}
+  \includegraphics[width=.45\textwidth]{figs/speedupxthreads.png}
   \caption{Gráfico de Speedup para experimentos da Tabela~\ref{tab:Resultados}.}\label{fig:speedupxthread}
 \end{figure}
 
