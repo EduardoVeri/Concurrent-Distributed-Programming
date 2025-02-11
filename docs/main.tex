@@ -465,7 +465,9 @@ uniformemente pela matriz, com valores próximos entre si.
 A análise de desempenho foi realizada em um computador \textit{desktop} com as
 especificações apresentadas na Tabela~\ref{tab:especificacaoHardware}. Ademais,
 as especificações dos parâmetros do problema foram incluídas na
-Tabela~\ref{tab:especificacaoSimulacao}.
+Tabela~\ref{tab:especificacaoSimulacao}. Note que a simulação do código MPI foi
+executada com variações no número de threads, porém mantendo em apenas uma
+única thread OMP.
 
 \begin{table}[ht]
   \centering
@@ -520,7 +522,7 @@ CUDA correspondente.
 \begin{table}[ht]
   \centering
   \caption{Tabela de comparação de desempenho entre o código sequencial e o
-    utilizando CUDA.}\label{tab:Resultados}
+    utilizando MPI.}\label{tab:results}
   \vspace{0.3cm}
   \begin{tabular}{||c c c||}
     \hline

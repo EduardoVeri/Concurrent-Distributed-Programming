@@ -1,22 +1,22 @@
 # Parallel Simulation of Contaminant Diffusion in Water
 
-This project implements a numerical model to simulate the diffusion of contaminants in water bodies, using sequential and parallel methods to optimize performance. Based on the diffusion equation, it explores the efficiency of parallel approaches with OpenMP and provides a Python interface to facilitate usage in advanced analyses.
+This project implements a numerical model to simulate the diffusion of contaminants in water bodies, using sequential and parallel methods to optimize performance. Based on the diffusion equation, it explores the efficiency of parallel approaches with OpenMP and provides a Python interface for advanced analyses.
 
 📄 **Full article can be accessed [here](./docs/).**
 
 <p float="left">
-    <img src="./data/gifs/simulation_circle.gif" width="" height="300" />
-    <img src="./data/gifs/simulation_X.gif" width="" height="300" />
+    <img src="./data/gifs/simulation_circle.gif" height="300" />
+    <img src="./data/gifs/simulation_X.gif" height="300" />
 </p>
 
 ## Build the Project
-This project is built using CMake. You can install it using the following command:
+This project is built using CMake. You can install the required tools using the following command:
 
 ```bash
 sudo apt-get install cmake build-essential -y
 ```
 
-To build the project, you can use the following commands on the project root directory:
+To build the project, use the following commands in the project root directory:
 ```bash
 # Generate configuration files. 
 # Run this command only once or when you want to change the optimization flag
@@ -26,11 +26,16 @@ cmake -B build -S . [-DNO_OPTIMIZATION=ON] [-DENABLE_VERBOSE=ON] [-DENABLE_EVALU
 cmake --build build 
 ```
 
-- `NO_OPTIMIZATION` flag can be used to disable compiler optimizations. By default, the project is built with optimizations enabled. To disable optimizations, use `-DNO_OPTIMIZATION=ON`. **Note that the optimization process can vectorize the code so well that the parallelization does not provide any speedup**. In such cases, you can disable optimizations to see the effect of it.
-- `ENABLE_VERBOSE` flag can be used to enable verbose mode during the compilation process. This will print more about the values off the steps in the diffusion equation. To enable verbose mode, use `-DENABLE_VERBOSE=ON`.
-- `ENABLE_EVALUATE` flag can be used to enable evaluation mode during the compilation process. This will print only the final time of the simulation. To enable evaluation mode, use `-DENABLE_EVALUATE=ON`. (**Don't use this flag with the `ENABLE_VERBOSE` flag**)
+> [!CAUTION]
+> The `NO_OPTIMIZATION` flag disables compiler optimizations. By default, the project is built with optimizations enabled, which can vectorize the code so well that the parallelization may not show significant speedup. Use this flag when you want to clearly see the benefits of parallel execution.
 
-Otherwise, you can use the following shell script to build the project:
+- `ENABLE_VERBOSE` enables a verbose compilation mode to display detailed information about the diffusion equation's steps.
+- `ENABLE_EVALUATE` enables an evaluation mode that prints only the final simulation time.
+
+> [!IMPORTANT]
+> **Flag Conflict:** Do not use ENABLE_VERBOSE together with ENABLE_EVALUATE as it may lead to unexpected behavior.
+
+Alternatively, you can use the provided shell script to build the project:
 ```bash
 ./build.sh [-h] [-e] [-v]
 ```
@@ -38,22 +43,22 @@ Otherwise, you can use the following shell script to build the project:
 - `-e`: Evaluation mode (print only the final time)
 - `-v`: Verbose mode (show print messages)
 
-Obs: if you are using __Windows__, use the `gcc` commands inside the script to compile the project.
+> [!TIP]
+> **Windows Users:** If you are using __Windows__, please use the `gcc` commands inside the script to compile the project.
 
-This will create a `build` directory and generate three files in it:
+This process will create a `build` directory containing:
 - sequential (executable)
 - omp (executable)
 - cuda (executable)
 - mpi (executable)
 - libDiffusionEquation.so (shared library)
 
-The `sequential` executable is the sequential version of the diffusion equation solver, while the `omp`, `cuda` and `mpi` executables are the parallel versions using OpenMP, Compute Unified Device Architecture (CUDA) and Message Passing Interface (MPI), respectively. The shared library `libDiffusionEquation.so` can be used to interface with the diffusion solver in Python.
+The `sequential` executable is the standard diffusion equation solver, while `omp`, `cuda` and `mpi` are parallel versions leveraging OpenMP, CUDA, and MPI, respectively. The shared library `libDiffusionEquation.so` allows interfacing with the diffusion solver from Python.
 
+## Using the C Executable
+The C executable offers a command-line interface to solve diffusion equations. The executable accepts the following arguments:
 
-## Using the C executable
-The C executable provides a command-line interface for solving diffusion equations. The executable takes the following command-line arguments:
-
-- `NEval`: How many times the simulation will be executed
+- `NEval`: Number times the simulation will be executed
 - `N`: Grid size
 - `T`: Total iterations
 - `D`: Diffusion coefficient
@@ -79,35 +84,34 @@ time mpirun -np 2 --oversubscribe ./build/mpi 15 100 1000 0.1 0.01 1.0 2
 
 ## Evaluation
 
-To execute an evaluation of the parallel versions, you can use the `scripts/run_simulations.sh` script. This script will run the parallel versions with the same parameters and save the execution time in a .txt file inside the `build/results` directory. Don't forget to compile the program using the evaluation mode before running the script.
+To evaluate the performance of the parallel versions, use the scripts/run_simulations.sh script. This script runs the parallel executables with identical parameters and saves the execution times to a .txt file in the build/results directory.
 
-```bash
-./build.sh -e
-./scripts/run_simulations.sh
-```
+Evaluation commands:
+  ./build.sh -e  
+  ./scripts/run_simulations.sh
 
 ### Evaluation with Python
 
-In the `notebooks` directory, you can find a Jupyter notebook that evaluates the performance of the parallel versions using the Python module. The notebook uses the `time` module to measure the execution time of the simulations and the `matplotlib` library to plot the results. It also compares all the values of the concentration matrix between the parallel versions and the sequential version to ensure that the results are correct.
+In the `notebooks` directory, you’ll find a Jupyter notebook that evaluates the performance of the parallel versions using the Python module. The notebook employs the `time` module to measure execution times and `matplotlib` to plot the results. It also verifies the concentration matrix values between the parallel and sequential versions.
 
-:warning: The MPI version is not yet implemented in Python module, so use the shell script instead.
+> [!WARNING]
+> **MPI in Python:** The MPI version is not yet implemented in the Python module. Please use the shell script for MPI-based evaluations.
 
 ## Using the Python Module
-The diffusion Python module provides an interface for solving diffusion equations using the shared C library compiled with the CMake. This allows for efficient numerical simulations by leveraging the computational speed of C while maintaining the flexibility and ease of use of Python.
+The diffusion Python module offers an interface for solving diffusion equations via the shared C library compiled with CMake. This integration provides the speed of C with the flexibility of Python, making it ideal for users who prefer Python for graphical visualizations or integration with other libraries.
 
-This will be useful for users who are not familiar with C programming or who want to use the diffusion solver in a Python environment to create graphical visualizations or to integrate it with other Python libraries.
+> [!IMPORTANT]
+> **Pre-requisite:** Ensure you have built the shared C library (libDiffusionEquation.so) following the build instructions above.
 
-Before using the Python module, ensure that you have built the shared C library (libDiffusionEquation.so) as per the build instructions above.
-
-To install the Python module, run the following command in the project root directory:
+To install the Python module in editable mode, run:
 ```bash
 pip install -e .
 ```
-
-The `-e` flag installs the module in editable mode, which means that any changes made to the source code will be reflected in the installed module without needing to reinstall it.
+> [!TIP]
+> The `-e` flag ensures that any changes to the source code are immediately reflected without needing to reinstall the module.
 
 ### Usage Example
-Here is an example of how to use the diffusion Python module to solve a 2D diffusion equation:
+Below is an example that demonstrates solving a 2D diffusion equation using the Python module:
 
 ```python
 from diffusion import (
@@ -118,8 +122,6 @@ from diffusion import (
 
 lib_path = "./build/libDiffusionEquation.so"
 
-# Context manager is not necessary for sequential and OMP
-# solver, but it is recommended to use it even for them
 with SequentialDiffusionEquation(
     library_path=lib_path, N=200, D=0.05, DELTA_T=0.02, DELTA_X=1.0,
     initial_concentration_points={(100, 100): 1.0},
@@ -143,9 +145,6 @@ with OMPdiffusionEquation(
     value_at_center = omp_solver.concentration_matrix[100][100]
     print(f"OMP diffusion value at center: {value_at_center}")
 
-
-# Context manager is necessary for CUDA solver
-# You also can free them manually by calling the finalize method
 with CUDADiffusionEquation(
     library_path=lib_path, N=200, D=0.05, DELTA_T=0.02, DELTA_X=1.0,
     initial_concentration_points={(100, 100): 1.0},
@@ -159,3 +158,6 @@ with CUDADiffusionEquation(
     print(f"CUDA diffusion value at center: {value_at_center}")
 
 ```
+
+> [!TIP]
+> **Resource Management:** Using context managers (the `with` statement) ensures that all resources are properly freed after the simulation, especially for the CUDA solver.
