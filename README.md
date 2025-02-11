@@ -84,11 +84,12 @@ time mpirun -np 2 --oversubscribe ./build/mpi 15 100 1000 0.1 0.01 1.0 2
 
 ## Evaluation
 
-To evaluate the performance of the parallel versions, use the scripts/run_simulations.sh script. This script runs the parallel executables with identical parameters and saves the execution times to a .txt file in the build/results directory.
+To evaluate the performance of the parallel versions, use the `scripts/run_simulations.sh` script. This script runs the parallel executables with identical parameters and saves the execution times to a .txt file in the `build/results` directory.
 
-Evaluation commands:
-  ./build.sh -e  
-  ./scripts/run_simulations.sh
+```bash
+./build.sh -e  
+./scripts/run_simulations.sh
+```
 
 ### Evaluation with Python
 
