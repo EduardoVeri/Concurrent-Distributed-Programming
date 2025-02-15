@@ -94,13 +94,13 @@
 \maketitle
 
 \begin{resumo}
-  Este trabalho apresenta uma análise comparativa de desempenho entre diferentes abordagens paralelas 
-  aplicadas à modelagem numérica da difusão de contaminantes em corpos d'água. A partir da discretização 
-  da equação de difusão pelo método de diferenças finitas, foram implementadas versões sequencial e 
-  paralela utilizando OpenMP, CUDA e MPI, além de uma interface em Python para facilitar a integração e 
-  visualização dos resultados. Os experimentos realizados demonstram que, embora as implementações em CPU 
-  apresentem ganhos relevantes em sistemas multicore, a abordagem CUDA se destaca pelo expressivo potencial 
-  de paralelismo das GPUs, proporcionando significativa redução no tempo de execução. Os resultados, 
+  Este trabalho apresenta uma análise comparativa de desempenho entre diferentes abordagens paralelas
+  aplicadas à modelagem numérica da difusão de contaminantes em corpos d'água. A partir da discretização
+  da equação de difusão pelo método de diferenças finitas, foram implementadas versões sequencial e
+  paralela utilizando OpenMP, CUDA e MPI, além de uma interface em Python para facilitar a integração e
+  visualização dos resultados. Os experimentos realizados demonstram que, embora as implementações em CPU
+  apresentem ganhos relevantes em sistemas multicore, a abordagem CUDA se destaca pelo expressivo potencial
+  de paralelismo das GPUs, proporcionando significativa redução no tempo de execução. Os resultados,
   validados por meio de mapas de calor e análises de speedup, reforçam a importância do emprego de técnicas
   de computação paralela para o aprimoramento de simulações numéricas em ambientes computacionais exigentes.
   \textbf{Palavras-chave}: Difusão; Computação Paralela; Modelagem Numérica; CUDA; OpenMP; MPI.
@@ -448,8 +448,9 @@ de execução e \textit{speedup} entre as duas versões.
 \subsection{Validação da Implementação - Numérico}
 
 Para assegurar a correção das duas implementações, verificamos em cada iteração
-se os valores presentes em cada célula da matriz são idênticos. Dessa forma, o
-resultado na última iteração deve ser o mesmo em ambas as versões.
+se os valores presentes em cada célula da matriz são idênticos ou muito
+próximos, considerando erro de ponto flutuante. Dessa forma, o resultado na
+última iteração deve ser o mesmo em ambas as versões.
 
 Por meio desse procedimento, utilizando a interface Python em conjunto com um
 Jupyter Notebook, comprovamos que as duas soluções produzem resultados
@@ -481,6 +482,21 @@ contaminante começa a se difundir para as regiões adjacentes, aumentando
 gradativamente a luminosidade nessas áreas e diminuindo nos pontos de
 concentração inicial. Na última iteração, a concentração se distribui
 uniformemente pela matriz, com valores próximos entre si.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=.45\textwidth]{figs/concentrationxiteration.png}
+  \caption{Gráfico da concentração total em três células distintas da matriz.}\label{fig:concentracaoXiteracao}
+\end{figure}
+
+Na Figura~\ref{fig:concentracaoXiteracao}, é possível observar a evolução da
+concentração em três células distintas da matriz ao longo das iterações. A
+célula central, que inicialmente possui alta concentração, apresenta uma
+diminuição gradual ao longo do tempo, enquanto as células vizinhas,
+inicialmente com baixa concentração, aumentam sua presença de contaminante. Em
+um tempo suficientemente longo, a concentração se estabiliza em um valor de
+equilíbrio, indicando a difusão completa do contaminante pela matriz. Portanto,
+esse comportamento é esperado e reforça a validade da implementação.
 
 \subsection{Análise de Desempenho}
 
