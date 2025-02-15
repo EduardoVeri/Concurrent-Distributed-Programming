@@ -91,12 +91,19 @@
 
 \begin{document}
 
-
 \maketitle
 
 \begin{resumo}
-Este trabalho apresenta uma análise comparativa de desempenho entre diferentes abordagens paralelas aplicadas à modelagem numérica da difusão de contaminantes em corpos d'água. A partir da discretização da equação de difusão pelo método de diferenças finitas, foram implementadas versões sequencial e paralela utilizando OpenMP, CUDA e MPI, além de uma interface em Python para facilitar a integração e visualização dos resultados. Os experimentos realizados demonstram que, embora as implementações em CPU apresentem ganhos relevantes em sistemas multicore, a abordagem CUDA se destaca pelo expressivo potencial de paralelismo das GPUs, proporcionando significativa redução no tempo de execução. Os resultados, validados por meio de mapas de calor e análises de speedup, reforçam a importância do emprego de técnicas de computação paralela para o aprimoramento de simulações numéricas em ambientes computacionais exigentes.
-\textbf{Palavras-chave}: Difusão; Computação Paralela; Modelagem Numérica; CUDA; OpenMP; MPI.
+  Este trabalho apresenta uma análise comparativa de desempenho entre diferentes abordagens paralelas 
+  aplicadas à modelagem numérica da difusão de contaminantes em corpos d'água. A partir da discretização 
+  da equação de difusão pelo método de diferenças finitas, foram implementadas versões sequencial e 
+  paralela utilizando OpenMP, CUDA e MPI, além de uma interface em Python para facilitar a integração e 
+  visualização dos resultados. Os experimentos realizados demonstram que, embora as implementações em CPU 
+  apresentem ganhos relevantes em sistemas multicore, a abordagem CUDA se destaca pelo expressivo potencial 
+  de paralelismo das GPUs, proporcionando significativa redução no tempo de execução. Os resultados, 
+  validados por meio de mapas de calor e análises de speedup, reforçam a importância do emprego de técnicas
+  de computação paralela para o aprimoramento de simulações numéricas em ambientes computacionais exigentes.
+  \textbf{Palavras-chave}: Difusão; Computação Paralela; Modelagem Numérica; CUDA; OpenMP; MPI.
 \end{resumo}
 
 \section{Introdução}
@@ -515,7 +522,7 @@ executada com variações no número de threads, porém mantendo em apenas uma
     \hline\hline
     Dimensão da Matriz (N $\times$ N) & 2000 $\times$ 2000          \\
     \hline
-    Número de Iterações               & 500                        \\
+    Número de Iterações               & 500                         \\
     \hline
     Distribuição Inicial              & Alta concentração no centro \\
     \hline
@@ -616,12 +623,12 @@ ambientes distribuídos, mesmo considerando o custo adicional de comunicação,
 enquanto o OpenMP proporcionou ganhos expressivos em sistemas multicore, apesar
 da limitação imposta pelo número de núcleos lógicos.
 
-Assim, o estudo ressalta a importância de compreender as peculiaridades de
-cada técnica paralela. As GPUs destacam-se em simulações intensivas, MPI
-possibilita a expansão dos recursos computacionais em clusters e o OpenMP se
-mostra eficiente em ambientes multicore. Essa combinação de abordagens oferece
-uma visão abrangente dos desafios e benefícios da aceleração por hardware
-paralelo, contribuindo para a otimização de algoritmos numéricos em contextos
+Assim, o estudo ressalta a importância de compreender as peculiaridades de cada
+técnica paralela. As GPUs destacam-se em simulações intensivas, MPI possibilita
+a expansão dos recursos computacionais em clusters e o OpenMP se mostra
+eficiente em ambientes multicore. Essa combinação de abordagens oferece uma
+visão abrangente dos desafios e benefícios da aceleração por hardware paralelo,
+contribuindo para a otimização de algoritmos numéricos em contextos
 computacionais exigentes.
 
 \bibliographystyle{sbc}
