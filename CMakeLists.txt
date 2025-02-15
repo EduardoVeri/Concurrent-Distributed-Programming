@@ -65,15 +65,15 @@ else()
     message(STATUS "CUDA not found. Disabling CUDA support.")
 endif()
 
-find_package(MPI) # Find MPI
+# find_package(MPI) # Find MPI
 
-if (MPI_C_FOUND)
-    message(STATUS "MPI found. Enabling MPI support.")
-    include_directories(${MPI_C_INCLUDE_PATH})
-    list(APPEND LIB_SOURCES src/mpi.c)
-else()
-    message(STATUS "MPI not found. Disabling MPI support.")
-endif()
+# if (MPI_C_FOUND)
+#     message(STATUS "MPI found. Enabling MPI support.")
+#     include_directories(${MPI_C_INCLUDE_PATH})
+#     list(APPEND LIB_SOURCES src/mpi.c)
+# else()
+#     message(STATUS "MPI not found. Disabling MPI support.")
+# endif()
 
 # Create the shared library and add BUILD_SHARED definition
 add_library(DiffusionEquation SHARED ${LIB_SOURCES})
