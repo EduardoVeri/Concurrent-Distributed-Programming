@@ -1,6 +1,6 @@
 # Parallel Simulation of Contaminant Diffusion in Water
 
-This project implements a numerical model to simulate the diffusion of contaminants in water bodies, using sequential and parallel methods to optimize performance. Based on the diffusion equation, it explores the efficiency of parallel approaches with OpenMP and provides a Python interface for advanced analyses.
+This project implements a numerical model to simulate the diffusion of contaminants in water bodies, using sequential and parallel methods to optimize performance. Based on the diffusion equation, it explores the efficiency of parallel approaches with OpenMP, CUDA, and MPI. The project also integrates the C code with Python to provide a user-friendly interface for advanced analyses.
 
 📄 **Full article can be accessed [here](./docs/).**
 
