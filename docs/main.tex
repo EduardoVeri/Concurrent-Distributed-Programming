@@ -122,19 +122,22 @@ aproximar a equação de difusão discreta:
   \label{eq:Difusao}
 \end{equation}
 
-Nesta equação, $C_{i,j}^t$ representa a concentração do contaminante na célula
-$(i,j)$ no instante $t$, $D$ é o coeficiente de difusão, $\Delta t$ o intervalo
-de tempo discreto e $\Delta x$ o espaçamento espacial. O objetivo principal é
-desenvolver uma simulação que modele a difusão de contaminantes aplicando
-programação paralela para acelerar os cálculos e analisar o comportamento dos
-poluentes ao longo do tempo. Serão comparadas as versões sequencial e paralela
-do algoritmo, utilizando OpenMP, CUDA e MPI para explorar o processamento
-simultâneo em múltiplos núcleos e dispositivos. Os resultados serão validados
-por meio de mapas de calor, gráficos de speedup e eficiência, além da
-comparação das matrizes geradas. Este estudo demonstra como técnicas de
-programação concorrente e distribuída podem otimizar simulações numéricas
-complexas, reforçando os conceitos aprendidos na disciplina e demonstrando sua
-aplicação prática no desenvolvimento de soluções eficientes.
+Esta formulação, que é amplamente adotada em estudos de simulações numéricas de
+difusão \cite{crank1979mathematics}, possibilita a análise detalhada do
+comportamento dos contaminantes. Nela, $C_{i,j}^t$ representa a concentração do
+contaminante na célula $(i,j)$ no instante $t$, $D$ é o coeficiente de difusão,
+$\Delta t$ o intervalo de tempo discreto e $\Delta x$ o espaçamento espacial.
+
+O objetivo principal é desenvolver uma simulação que modele a difusão de
+contaminantes aplicando programação paralela para acelerar os cálculos e
+analisar o comportamento dos poluentes ao longo do tempo. Serão comparadas as
+versões sequencial e paralela do algoritmo, utilizando OpenMP, CUDA e MPI para
+explorar o processamento simultâneo em múltiplos núcleos e dispositivos. Os
+resultados serão validados por meio de mapas de calor, gráficos de speedup e
+eficiência, além da comparação das matrizes geradas. Este estudo demonstra como
+técnicas de programação concorrente e distribuída podem otimizar simulações
+numéricas complexas, reforçando os conceitos aprendidos na disciplina e
+demonstrando sua aplicação prática no desenvolvimento de soluções eficientes.
 
 \section{Implementação do Algorítimo}
 
