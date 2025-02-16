@@ -109,7 +109,7 @@
 \section{Introdução}
 
 A contaminação de corpos d'água, tais como lagos e rios, é um grande desafio ao
-meio ambiente e a saúde pública, sendo preciso entender a dispersão do
+meio ambiente e à saúde pública, sendo preciso entender a dispersão do
 contaminante no ambiente para poder realizar qualquer intervenção de mitigação.
 Dessa forma, este trabalho foca na modelagem numérica da difusão de poluentes
 em uma matriz bidimensional, utilizando o método de diferenças finitas para
@@ -153,7 +153,7 @@ da matriz. A atualização de cada célula depende da média das concentrações
 seus vizinhos imediatos e de parâmetros físicos como coeficiente de difusão, o
 intervalo de tempo $\Delta t$ e o espaçamento espacial $\Delta x$.
 
-\begin{lstlisting}[style=CStyle, caption={Código sequencial da para cálculo da difusão, que será utilizado como base para as demais implementações.}, label={cod:seq}]
+\begin{lstlisting}[style=CStyle, caption={Código sequencial para cálculo da difusão, que será utilizado como base para as demais implementações.}, label={cod:seq}]
 double sequential_diff_eq(double **C, double **C_new, DiffEqArgs *args) {
     int N = args->N;
     double D = args->D;
@@ -314,19 +314,18 @@ O último código paralelo foi desenvolvido utilizando MPI (Message Passing
 Interface) e OpenMP para combinar processamento distribuído e paralelismo em
 nível de threads. O MPI é uma biblioteca de comunicação que permite a troca de
 dados entre processos independentes em um ambiente de computação distribuída.
-Ele é perfeito para aplicações que exigem aplicações que exigem alto desempenho
-e escalabilidade, possibilitando a comunicação eficiente entre processos
-distribuídos em diferentes nós de um cluster. A combinação de MPI e OpenMP
-permite a execução paralela em múltiplos núcleos de processamento em cada nó.
+Ele é perfeito para aplicações que exigem alto desempenho e escalabilidade,
+possibilitando a comunicação eficiente entre processos distribuídos em
+diferentes nós de um cluster. A combinação de MPI e OpenMP permite a execução
+paralela em múltiplos núcleos de processamento em cada nó.
 
 \textbf{Etapas do Fluxo de Execução:}
 \begin{enumerate}
   \item \textbf{Inicialização:} Inicia com MPI\_Init\_thread(), definindo o número de processos e threads OpenMP. Cada processo MPI recebe sua parte da matriz global.
-  \item \textbf{Troca de dados entre processo:} Os processos MPI trocam as fronteiras das suas submatrizes com processos vizinhos usando comunicação assíncrona (MPI\_Isend() e MPI\_Irecv()).
-  \item \textbf{Calculo Paralelo:} Cada processo MPI aplica a equação diferencial na sua submatriz, paralelizando o cálculo com OpenMP (\#pragma omp parallel for).
-  \item \textbf{Sincronização global:} A diferença entre os estados da matriz é calculada localmente e reduzida globalmente com MPI\_Allreduce(), garantindo consistência entre os processos.
+  \item \textbf{Troca de dados entre processos:} Os processos MPI trocam as fronteiras das suas submatrizes com processos vizinhos usando comunicação assíncrona (MPI\_Isend() e MPI\_Irecv()).
+  \item \textbf{Cálculo Paralelo:} Cada processo MPI aplica a equação diferencial na sua submatriz, paralelizando o cálculo com OpenMP (\#pragma omp parallel for).
+  \item \textbf{Sincronização Global:} A diferença entre os estados da matriz é calculada localmente e reduzida globalmente com MPI\_Allreduce(), garantindo consistência entre os processos.
   \item \textbf{Finalização:} Após completar todas as iterações, a memória é liberada e MPI\_Finalize() é chamado. O tempo total de execução é registrado e exibido pelo processo mestre.
-
 \end{enumerate}
 
 Esse fluxo de execução garante que a carga de trabalho seja distribuída de
@@ -397,7 +396,7 @@ facilidade de uso do Python, possibilitando a configuração de parâmetros como
 tamanho da matriz, coeficiente de difusão e dimensões dos blocos de
 \textit{threads}.
 
-\begin{lstlisting}[style=PythonStyle, caption={Implementação paralelizada utilizando CUDA.}, label={cod:pythonlib}]
+\begin{lstlisting}[style=PythonStyle, caption={Interface Python para a simulação das equações de difusão.}, label={cod:pythonlib}]
 from diffusion import (
     SequentialDiffusionEquation,
     OMPdiffusionEquation,
@@ -431,7 +430,7 @@ with CUDADiffusionEquation(
     initial_concentration_points={(100, 100): 1.0},
 ) as cuda_solver:
     for _ in range(1000):
-        diff_cuda = cuda_solver.step()  # Execute cuda step
+        diff_cuda = cuda_solver.step()  # Execute CUDA step
     
     cuda_solver.get_result() # Get the result from device to host
     value_at_center = cuda_solver.concentration_matrix[100][100]
@@ -489,7 +488,7 @@ uniformemente pela matriz, com valores próximos entre si.
 \begin{figure}[ht]
   \centering
   \includegraphics[width=.45\textwidth]{figs/concentrationxiteration.png}
-  \caption{Gráfico da concentração total em três células distintas da matriz.}\label{fig:concentracaoXiteracao}
+  \caption{Gráfico da concentração total em três células distintas da matriz ao longo das iterações.}\label{fig:concentracaoXiteracao}
 \end{figure}
 
 Na Figura~\ref{fig:concentracaoXiteracao}, é possível observar a evolução da
@@ -501,7 +500,7 @@ um tempo suficientemente longo, a concentração se estabiliza em um valor de
 equilíbrio, indicando a difusão completa do contaminante pela matriz. Portanto,
 esse comportamento é esperado e reforça a validade da implementação.
 
-\subsection{Análise de Desempenho}
+\subsection{Execução do Experimento}
 
 A análise de desempenho foi realizada em um computador \textit{desktop} com as
 especificações apresentadas na Tabela~\ref{tab:especificacaoHardware}. Ademais,
@@ -606,6 +605,8 @@ CUDA correspondente.
   \caption{Gráfico de Speedup para experimentos da Tabela~\ref{tab:Resultados}.}\label{fig:speedupxthread}
 \end{figure}
 
+\section{Discussão das Abordagens}\label{sec:discussao}
+
 Os resultados apresentados na Tabela~\ref{tab:Resultados} estão em conformidade
 com as expectativas, considerando as especificações de hardware descritas na
 Tabela~\ref{tab:especificacaoHardware}. Dentre as abordagens testadas, a
@@ -624,10 +625,41 @@ o potencial das GPUs para tarefas que exigem cálculos intensivos, como os
 algoritmos de aprendizado de máquina. Contudo, em simulações de menor escala os
 benefícios podem ser menos significativos, pois os custos de alocação,
 transferência e gerenciamento dos dados na GPU podem superar as vantagens do
-paralelismo. Além disso, embora o MPI apresente limitações em ambientes com
-poucos núcleos lógicos, sua utilização em \textit{clusters} distribuídos pode
-explorar um paralelismo massivo, resultando em desempenho potencialmente
-superior.
+paralelismo.
+% Além disso, embora o MPI apresente limitações em ambientes com
+% poucos núcleos lógicos, sua utilização em \textit{clusters} distribuídos pode
+% explorar um paralelismo massivo, resultando em desempenho potencialmente
+% superior.
+
+A análise das abordagens implementadas evidencia que cada técnica possui
+características próprias em termos de escalabilidade, facilidade de
+implementação, desempenho e aplicabilidade em simulações numéricas. A
+utilização do OpenMP, por exemplo, mostrou-se bastante vantajosa para sistemas
+\textit{multicore} devido à sua simplicidade e ao baixo \textit{overhead} na
+criação e sincronização de \textit{threads}. Essa abordagem permite uma rápida
+implementação e integração, embora sua escalabilidade seja naturalmente
+limitada pelo número de núcleos disponíveis na CPU, o que pode restringir seu
+desempenho em simulações com demandas computacionais muito intensas ou em
+escalas significativamente grandes.
+
+Em contrapartida, a aplicação do MPI abre a possibilidade de executar a
+simulação em ambientes distribuídos, como clusters, onde é possível utilizar
+recursos computacionais massivos. Em cenários ideais, com clusters compostos
+por inúmeros nós e múltiplos núcleos, a divisão do problema entre os processos
+pode resultar em ganhos expressivos de desempenho e em uma capacidade muito
+maior para lidar com simulações de grande escala. Entretanto, essa abordagem
+também impõe desafios, como o \textit{overhead} inerente à comunicação entre
+processos, que pode reduzir os ganhos obtidos se a relação entre computação e
+comunicação não for favorável, além de aumentar a complexidade na implementação
+e depuração dos códigos, especialmente quando se lida com sincronização
+assíncrona.
+
+Por fim, todas as abordagens garantiram resultados precisos e consistentes, mas
+a escolha da técnica mais adequada depende fortemente do ambiente de execução e
+da escala da simulação. Em ambientes extremamente paralelos, como os clusters,
+o uso de MPI (com ou sem a combinação com OpenMP) oferece vantagens
+significativas, permitindo a distribuição do problema entre numerosos nós e,
+consequentemente, uma melhoria substancial na escalabilidade e desempenho.
 
 \section{Conclusão}
 
@@ -642,13 +674,12 @@ ambientes distribuídos, mesmo considerando o custo adicional de comunicação,
 enquanto o OpenMP proporcionou ganhos expressivos em sistemas multicore, apesar
 da limitação imposta pelo número de núcleos lógicos.
 
-Assim, o estudo ressalta a importância de compreender as peculiaridades de cada
-técnica paralela. As GPUs destacam-se em simulações intensivas, MPI possibilita
-a expansão dos recursos computacionais em clusters e o OpenMP se mostra
-eficiente em ambientes multicore. Essa combinação de abordagens oferece uma
-visão abrangente dos desafios e benefícios da aceleração por hardware paralelo,
-contribuindo para a otimização de algoritmos numéricos em contextos
-computacionais exigentes.
+Além disso, a discussão apresentada na Seção~\ref{sec:discussao} reforça que,
+apesar das diferenças em termos de escalabilidade e complexidade de
+implementação, todas as abordagens garantiram a precisão dos resultados. Essa
+combinação de estratégias evidencia como a escolha da técnica de paralelismo
+deve ser orientada pelos recursos disponíveis e pelos requisitos específicos de
+cada simulação.
 
 \bibliographystyle{sbc}
 \bibliography{sbc-template}
