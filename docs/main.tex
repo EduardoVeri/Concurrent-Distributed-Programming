@@ -321,11 +321,11 @@ paralela em múltiplos núcleos de processamento em cada nó.
 
 \textbf{Etapas do Fluxo de Execução:}
 \begin{enumerate}
-  \item \textbf{Inicialização:} Inicia com MPI\_Init\_thread(), definindo o número de processos e threads OpenMP. Cada processo MPI recebe sua parte da matriz global.
-  \item \textbf{Troca de dados entre processos:} Os processos MPI trocam as fronteiras das suas submatrizes com processos vizinhos usando comunicação assíncrona (MPI\_Isend() e MPI\_Irecv()).
+  \item \textbf{Inicialização:} Inicia com \texttt{MPI\_Init\_thread()}, definindo o número de processos e threads OpenMP. Cada processo MPI recebe sua parte da matriz global.
+  \item \textbf{Troca de dados entre processos:} Os processos MPI trocam as fronteiras das suas submatrizes com processos vizinhos usando comunicação assíncrona (\texttt{MPI\_Isend()} e \texttt{MPI\_Irecv()}).
   \item \textbf{Cálculo Paralelo:} Cada processo MPI aplica a equação diferencial na sua submatriz, paralelizando o cálculo com OpenMP (\#pragma omp parallel for).
-  \item \textbf{Sincronização Global:} A diferença entre os estados da matriz é calculada localmente e reduzida globalmente com MPI\_Allreduce(), garantindo consistência entre os processos.
-  \item \textbf{Finalização:} Após completar todas as iterações, a memória é liberada e MPI\_Finalize() é chamado. O tempo total de execução é registrado e exibido pelo processo mestre.
+  \item \textbf{Sincronização Global:} A diferença entre os estados da matriz é calculada localmente e reduzida globalmente com \texttt{MPI\_Allreduce()}, garantindo consistência entre os processos.
+  \item \textbf{Finalização:} Após completar todas as iterações, a memória é liberada e \texttt{MPI\_Finalize()} é chamado. O tempo total de execução é registrado e exibido pelo processo mestre.
 \end{enumerate}
 
 Esse fluxo de execução garante que a carga de trabalho seja distribuída de
