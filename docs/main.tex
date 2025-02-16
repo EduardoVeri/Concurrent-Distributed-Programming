@@ -470,7 +470,7 @@ valores próximos de um, indicando alta concentração do contaminante, enquanto
 cores claras representam valores próximos de zero, indicando baixa presença de
 contaminação.
 
-\begin{figure}[ht]
+\begin{figure}[htb]
   \centering
   \includegraphics[width=.6\textwidth]{figs/heatmap.png}
   \caption{Mapa de calor em quatro instantes distintos da simulação.}\label{fig:heatmap}
@@ -485,7 +485,7 @@ gradativamente a luminosidade nessas áreas e diminuindo nos pontos de
 concentração inicial. Na última iteração, a concentração se distribui
 uniformemente pela matriz, com valores próximos entre si.
 
-\begin{figure}[ht]
+\begin{figure}[htb]
   \centering
   \includegraphics[width=.6\textwidth]{figs/concentrationxiteration.png}
   \caption{Gráfico da concentração total em três células distintas da matriz ao longo das iterações.}\label{fig:concentracaoXiteracao}
@@ -509,7 +509,7 @@ Tabela~\ref{tab:especificacaoSimulacao}. Note que a simulação do código MPI f
 executada com variações no número de threads, porém mantendo em apenas uma
 única thread OMP.
 
-\begin{table}[ht]
+\begin{table}[htb]
   \centering
   \caption{Tabela de especificação de Hardware}
   \vspace{0.3cm}
@@ -530,7 +530,7 @@ executada com variações no número de threads, porém mantendo em apenas uma
   \end{tabular}\label{tab:especificacaoHardware}
 \end{table}
 
-\begin{table}[ht]
+\begin{table}[htb]
   \centering
   \caption{Tabela de especificação da Simulação}
   \vspace{0.3cm}
@@ -559,7 +559,7 @@ calculamos o tempo médio gasto e seu desvio padrão. O \textit{speedup} é
 calculado dividindo-se o tempo de execução sequencial pelo tempo de execução
 CUDA correspondente. Os valores obtidos foram adicionados à Tabela~\ref{tab:Resultados}.
 
-\begin{table}[ht]
+\begin{table}[htb]
   \centering
   \caption{Tabela de comparação de desempenho entre o código sequencial e o
     utilizando MPI.}\label{tab:Resultados}
@@ -599,9 +599,9 @@ CUDA correspondente. Os valores obtidos foram adicionados à Tabela~\ref{tab:Res
   \end{tabular}
 \end{table}
 
-\begin{figure}[ht]
+\begin{figure}[htb]
   \centering
-  \includegraphics[width=.6\textwidth]{figs/speedupxthreads.png}
+  \includegraphics[width=.5\textwidth]{figs/speedupxthreads.png}
   \caption{Gráfico de Speedup para experimentos da Tabela~\ref{tab:Resultados}.}\label{fig:speedupxthread}
 \end{figure}
 
